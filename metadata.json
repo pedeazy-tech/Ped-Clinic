@@ -1,0 +1,6 @@
+{
+  "name": "Pediatric Clinic Companion",
+  "description": "A high-fidelity A4 prescription letterhead generator and editor tailored for pediatricians. Includes interactive medical forms, a pediatric dosage calculator, and print-ready layout optimization in professional blue themes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
