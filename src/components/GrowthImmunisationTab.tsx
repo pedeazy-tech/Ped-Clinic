@@ -355,6 +355,16 @@ export default function GrowthImmunisationTab({ patient, themeColors, onResetPat
     }
   };
 
+  const handleCheckAllVaccines = () => {
+    if (window.confirm("Mark all vaccines as taken / given?")) {
+      const allGiven: Record<string, { status: 'given' | 'pending' | 'not_taken'; dateGiven?: string }> = {};
+      VACCINE_SCHEDULE_DATA.forEach(v => {
+        allGiven[v.id] = { status: 'given' };
+      });
+      saveImmToCache(allGiven);
+    }
+  };
+
   // Numerical percentiles helper array
   const currentSex = patient.gender === 'Girl' ? 'Girl' : 'Boy';
   let percentilePoints;
@@ -873,15 +883,25 @@ export default function GrowthImmunisationTab({ patient, themeColors, onResetPat
                   <h3 className="text-sm font-black text-slate-800">
                     <span>India UIP Vaccine Tracker</span>
                   </h3>
-                  <button
-                    type="button"
-                    onClick={handleClearVaccines}
-                    style={{ color: themeColors.primary, borderColor: themeColors.border, backgroundColor: themeColors.subtle }}
-                    className="text-[10.5px] px-2.5 py-1 rounded-lg border font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95 shadow-sm hover:opacity-90"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Reset Vaccine Tab</span>
-                  </button>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={handleCheckAllVaccines}
+                      className="text-[10.5px] px-2 py-1 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50 font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95 shadow-sm hover:opacity-90"
+                    >
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>Mark All Taken</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearVaccines}
+                      style={{ color: themeColors.primary, borderColor: themeColors.border, backgroundColor: themeColors.subtle }}
+                      className="text-[10.5px] px-2 py-1 rounded-lg border font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95 shadow-sm hover:opacity-90"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Reset Vaccine Tab</span>
+                    </button>
+                  </div>
                 </div>
               </div>
               
