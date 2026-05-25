@@ -40,6 +40,83 @@ export default function PrescriptionForm({
   const [medDuration, setMedDuration] = useState('5 days');
   const [medNotes, setMedNotes] = useState('');
 
+  // Favorites State (Frequently used drugs templates)
+  interface FavoriteMed {
+    id: string;
+    name: string;
+    type: 'Syrup' | 'Drops' | 'Suspension' | 'Sachet' | 'Tablet' | 'Capsule' | 'Inhaler' | 'Ointment' | 'Other';
+    dosage: string;
+    frequency: string;
+    timing: 'Before Food' | 'After Food' | 'With Food' | 'Empty Stomach' | 'None';
+    duration: string;
+    notes: string;
+  }
+
+  const [favorites, setFavorites] = useState<FavoriteMed[]>(() => {
+    const saved = localStorage.getItem('ped_favorite_drugs_v1');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    // standard clinic defaults
+    return [
+      { id: 'fav-1', name: 'Syrup Calpol 250', type: 'Syrup', dosage: '5 ml', frequency: 'Thrice Daily (TDS)', timing: 'After Food', duration: '3-5 days', notes: 'SOS if temp > 100 F' },
+      { id: 'fav-2', name: 'Syrup Ondem 2mg', type: 'Suspension' as any, dosage: '2.5 ml', frequency: 'Thrice Daily (TDS)', timing: 'Before Food', duration: '3 days', notes: 'Give 15 minutes before feed/solids' },
+      { id: 'fav-3', name: 'Nasal Spray Nasoclear', type: 'Drops' as any, dosage: '2 drops', frequency: 'As needed (PRN / SOS)', timing: 'None', duration: '5 days', notes: 'Apply in both nostrils before feeding' },
+      { id: 'fav-4', name: 'Syrup Augmentin 228.5', type: 'Suspension' as any, dosage: '5 ml', frequency: 'Twice Daily (BD)', timing: 'With Food', duration: '5 days', notes: 'Finish full 5-day course' }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ped_favorite_drugs_v1', JSON.stringify(favorites));
+  }, [favorites]);
+
+  const toggleFavorite = (med: Omit<FavoriteMed, 'id'>) => {
+    const exists = favorites.find(f => f.name.toLowerCase() === med.name.toLowerCase().trim());
+    if (exists) {
+      setFavorites(prev => prev.filter(f => f.id !== exists.id));
+    } else {
+      const newFav: FavoriteMed = {
+        id: 'fav_' + Math.random().toString(36).substring(2, 9),
+        name: med.name.trim(),
+        type: med.type,
+        dosage: med.dosage,
+        frequency: med.frequency,
+        timing: med.timing,
+        duration: med.duration,
+        notes: med.notes
+      };
+      setFavorites(prev => [...prev, newFav]);
+    }
+  };
+
+  const deleteFavorite = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavorites(prev => prev.filter(f => f.id !== id));
+  };
+
+  const useFavorite = (fav: FavoriteMed) => {
+    setMedName(fav.name);
+    setMedType(fav.type);
+    setMedDosage(fav.dosage);
+    setMedFrequency(fav.frequency);
+    setMedTiming(fav.timing);
+    setMedDuration(fav.duration);
+    setMedNotes(fav.notes);
+  };
+
+  const addFavoriteDirectly = (fav: FavoriteMed, e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleAddMedication({
+      name: fav.name,
+      type: fav.type,
+      dosage: fav.dosage,
+      frequency: fav.frequency,
+      timing: fav.timing,
+      duration: fav.duration,
+      notes: fav.notes
+    });
+  };
+
   // Canvas Signature pad ref
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -53,13 +130,16 @@ export default function PrescriptionForm({
         age: '2 Years 4 Months',
         gender: 'Boy',
         weight: '12.5',
+        height: '88',
         temp: '101.4',
         pulse: '110',
         bp: '90/60',
         spo2: '98',
         date: new Date().toISOString().split('T')[0],
         feedingType: 'Solid/Regular',
-        immunizationUpToDate: true
+        immunizationUpToDate: true,
+        immunizationStatus: 'up_to_date',
+        missingVaccines: ''
       },
       chiefComplaints: [
         'Fever: persistent high grade (>101°F) x 2 days',
@@ -281,30 +361,67 @@ export default function PrescriptionForm({
     }));
   };
 
-  const clearAllPrescriptionData = () => {
-    if (window.confirm("Are you sure you want to clear all active patient entries?")) {
-      setPrescription({
-        id: Math.random().toString(),
-        patient: {
-          name: '',
-          age: '',
-          gender: '',
-          weight: '',
-          temp: '',
-          pulse: '',
-          bp: '',
-          spo2: '',
-          date: new Date().toISOString().split('T')[0],
-          feedingType: '',
-          immunizationUpToDate: true
-        },
-        chiefComplaints: [],
-        clinicalFindings: [],
-        diagnosis: '',
-        medications: [],
-        advice: '',
-        createdAt: new Date().toISOString()
-      });
+  const clearActiveTabDetails = () => {
+    switch (activeTab) {
+      case 'patient':
+        setPrescription(prev => ({
+          ...prev,
+          patient: {
+            name: '',
+            age: '',
+            gender: '',
+            weight: '',
+            height: '',
+            temp: '',
+            pulse: '',
+            bp: '',
+            spo2: '',
+            date: new Date().toISOString().split('T')[0],
+            feedingType: '',
+            immunizationUpToDate: true,
+            immunizationStatus: 'up_to_date' as const,
+            missingVaccines: ''
+          }
+        }));
+        break;
+      case 'clinical':
+        setPrescription(prev => ({
+          ...prev,
+          chiefComplaints: [],
+          clinicalFindings: [],
+          diagnosis: ''
+        }));
+        break;
+      case 'medications':
+        setPrescription(prev => ({
+          ...prev,
+          medications: []
+        }));
+        break;
+      case 'advice':
+        setPrescription(prev => ({
+          ...prev,
+          advice: ''
+        }));
+        break;
+      case 'settings':
+        setSettings(prev => ({
+          ...prev,
+          signatureDrawData: '',
+          signatureText: ''
+        }));
+        break;
+    }
+  };
+
+  const getClearButtonLabel = () => {
+    switch (activeTab) {
+      case 'patient': return 'Clear Patient Details';
+      case 'clinical': return 'Clear Clinical & Diagnosis';
+      case 'medications': return 'Clear Rx Medications';
+      case 'advice': return 'Clear Dietary Advice';
+      case 'settings': return 'Clear Signature & Profile settings';
+      default: return 'Clear Tab Details';
     }
   };
 
@@ -387,7 +504,7 @@ export default function PrescriptionForm({
           <div className="space-y-4">
             <div className="flex justify-between items-center bg-blue-50/40 p-3 rounded-xl border border-blue-100/40">
               <span className="text-xs text-slate-500 leading-relaxed max-w-xs">
-                Dr. Neeladri, use the demo pre-filler to quickly test-drive calculated pediatric doses!
+                Load a pre-filled mock patient to quickly test-drive calculated pediatric doses!
               </span>
               <button
                 type="button"
@@ -448,6 +565,17 @@ export default function PrescriptionForm({
               </div>
 
               <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Height <strong className="text-slate-500">(cm)</strong></label>
+                <input
+                  type="text"
+                  placeholder="e.g. 88"
+                  className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-1 focus:ring-blue-500 rounded-lg px-3 py-2 text-xs focus:outline-none transition-all"
+                  value={prescription.patient.height || ''}
+                  onChange={(e) => handlePatientChange('height', e.target.value)}
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Prescription Date</label>
                 <input
                   type="date"
@@ -472,17 +600,54 @@ export default function PrescriptionForm({
                 </select>
               </div>
 
-              <div className="flex items-center gap-2 py-2 mt-4 col-span-2">
-                <input
-                  id="imm-chk"
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                  checked={prescription.patient.immunizationUpToDate}
-                  onChange={(e) => handlePatientChange('immunizationUpToDate', e.target.checked)}
-                />
-                <label htmlFor="imm-chk" className="text-xs font-medium text-slate-600 cursor-pointer select-none">
-                  Child Pediatric Immunizations are strictly Up-To-Date for Age
+              <div className="col-span-2 pt-3 border-t border-slate-100/70 space-y-2.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+                  Pediatric Immunization Status
                 </label>
+                <div className="flex flex-wrap gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-600">
+                    <input
+                      type="radio"
+                      name="immunizationStatus"
+                      className="w-4 h-4 text-indigo-600 focus:ring-indigo-505 accent-indigo-600"
+                      checked={(prescription.patient.immunizationStatus || (prescription.patient.immunizationUpToDate ? 'up_to_date' : 'not_up_to_date')) === 'up_to_date'}
+                      onChange={() => {
+                        handlePatientChange('immunizationStatus', 'up_to_date');
+                        handlePatientChange('immunizationUpToDate', true);
+                        handlePatientChange('missingVaccines', ''); // reset missing when up to date
+                      }}
+                    />
+                    <span>Up to Date for Age</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-600">
+                    <input
+                      type="radio"
+                      name="immunizationStatus"
+                      className="w-4 h-4 text-indigo-600 focus:ring-indigo-505 accent-indigo-600"
+                      checked={(prescription.patient.immunizationStatus || (prescription.patient.immunizationUpToDate ? 'up_to_date' : 'not_up_to_date')) === 'not_up_to_date'}
+                      onChange={() => {
+                        handlePatientChange('immunizationStatus', 'not_up_to_date');
+                        handlePatientChange('immunizationUpToDate', false);
+                      }}
+                    />
+                    <span>Not Up to Date</span>
+                  </label>
+                </div>
+
+                {((prescription.patient.immunizationStatus || (prescription.patient.immunizationUpToDate ? 'up_to_date' : 'not_up_to_date')) === 'not_up_to_date') && (
+                  <div className="space-y-1.5 pt-1.5 animate-fadeIn">
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase">
+                      Specify vaccines not taken / delayed:
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Delayed 3rd dose of Pentavalent & Rotavirus booster vaccine..."
+                      className="w-full bg-slate-50 border border-slate-205 focus:bg-white focus:ring-1 focus:ring-blue-500 rounded-lg px-3 py-2 text-xs focus:outline-none transition-all text-slate-700 font-semibold"
+                      value={prescription.patient.missingVaccines || ''}
+                      onChange={(e) => handlePatientChange('missingVaccines', e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -658,6 +823,70 @@ export default function PrescriptionForm({
         {/* ================= TAB: MEDICATIONS ================= */}
         {activeTab === 'medications' && (
           <div className="space-y-4">
+
+            {/* Frequently Used Drugs Section */}
+            <div className="border border-blue-100 rounded-xl p-3.5 space-y-2.5 bg-[#f0f9ff]/50">
+              <div className="flex justify-between items-center">
+                <h4 className="text-xs font-black text-blue-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <Heart className="w-3.5 h-3.5 text-blue-600 fill-blue-500/20" />
+                  <span>Frequently Used Therapeutics ({favorites.length})</span>
+                </h4>
+                <span className="text-[10px] text-slate-500">Click card to use • (+) to add Rx</span>
+              </div>
+
+              {favorites.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {favorites.map((fav) => (
+                    <div
+                      key={fav.id}
+                      onClick={() => useFavorite(fav)}
+                      className="group border border-slate-200 bg-white hover:bg-blue-50/50 hover:border-blue-300 rounded-xl p-2.5 cursor-pointer shadow-sm transition-all flex flex-col justify-between"
+                    >
+                      <div className="flex justify-between items-start gap-1">
+                        <span className="font-extrabold text-slate-800 text-[11px] leading-tight">
+                          {fav.name}
+                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Add directly button */}
+                          <button
+                            type="button"
+                            onClick={(e) => addFavoriteDirectly(fav, e)}
+                            className="p-1 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
+                            title="Add directly to prescription"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                          {/* Delete favorite button */}
+                          <button
+                            type="button"
+                            onClick={(e) => deleteFavorite(fav.id, e)}
+                            className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                            title="Remove from favorites"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="text-[9px] text-slate-500 font-mono mt-1 flex flex-wrap gap-1 items-center">
+                        <span className="bg-slate-100 px-1 py-0.2 rounded text-[8px] uppercase font-bold text-slate-500">{fav.type}</span>
+                        <span>• {fav.dosage}</span>
+                        <span>• {fav.frequency.split(' (')[0]}</span>
+                      </div>
+                      {fav.notes && (
+                        <div className="text-[9px] text-slate-400 italic mt-0.5 line-clamp-1">
+                          {fav.notes}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                  <p className="text-xs text-slate-400 italic">No custom therapeutics saved yet.</p>
+                  <p className="text-[9px] text-slate-400 mt-0.5 text-center">Type details in Manual addition below and click 'Save to Favorites'.</p>
+                </div>
+              )}
+            </div>
             
             {/* Automated calculator takes precedent */}
             <DoseCalculator 
@@ -768,15 +997,38 @@ export default function PrescriptionForm({
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleAddManualMed}
-                disabled={!medName.trim()}
-                className="w-full py-2 px-3 border border-blue-200 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Custom Medicine</span>
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddManualMed}
+                  disabled={!medName.trim()}
+                  className="w-full py-2 px-3 border border-blue-200 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Custom Medicine</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!medName.trim()) return;
+                    toggleFavorite({
+                      name: medName.trim(),
+                      type: medType,
+                      dosage: medDosage.trim(),
+                      frequency: medFrequency,
+                      timing: medTiming,
+                      duration: medDuration.trim(),
+                      notes: medNotes.trim()
+                    });
+                  }}
+                  disabled={!medName.trim()}
+                  className="w-full py-2 px-3 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed shadow-sm"
+                >
+                  <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500/20" />
+                  <span>Save to Favorites</span>
+                </button>
+              </div>
             </div>
 
             {/* Currently Prescribed medications table */}
@@ -807,6 +1059,24 @@ export default function PrescriptionForm({
               ) : (
                 <p className="text-xs text-slate-400 italic">No medicines listed yet.</p>
               )}
+            </div>
+
+            {/* Previous / Maintenance Medications Block */}
+            <div className="pt-4 border-t border-slate-100 space-y-2">
+              <label className="block text-xs font-semibold text-slate-705 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-505"></span>
+                <span>Previous / Chronic Maintenance Medications</span>
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Enter details of any previous medications, long-term syrups, inhalers, or home remedies the child is currently taking..."
+                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-1 focus:ring-blue-500 rounded-xl px-3 py-2 text-xs focus:outline-none transition-all text-slate-700 font-medium"
+                value={prescription.previousMedications || ''}
+                onChange={(e) => setPrescription(prev => ({ ...prev, previousMedications: e.target.value }))}
+              />
+              <p className="text-[10px] text-slate-400 italic leading-snug">
+                These settings persist and render automatically in the final printable Rx as "Active Maintenance / Past Medications".
+              </p>
             </div>
           </div>
         )}
@@ -908,6 +1178,16 @@ export default function PrescriptionForm({
                     <option value="cute-panda">Cute Panda Face</option>
                     <option value="happy-baby">Happy Baby Face</option>
                     <option value="stethoscope-pulse">Stethoscope Heart</option>
+                    <option value="teddy-bear">Friendly Teddy Bear</option>
+                    <option value="shield-heart">Shield & Heart Protection</option>
+                    <option value="baby-carriage">Classic Carriage</option>
+                    <option value="little-sun">Happy Sunshine</option>
+                    <option value="cute-rocket">Space Discovery Rocket</option>
+                    <option value="happy-tooth">Happy Dental Tooth</option>
+                    <option value="clinical-apple">Green Health Apple</option>
+                    <option value="toy-blocks">Alphabet Toy Blocks</option>
+                    <option value="sleeping-owl">Wise Sleeping Owl</option>
+                    <option value="baby-pram">Retro Pediatric Pram</option>
                     <option value="minimalist">Clinical Red Cross</option>
                   </select>
                 </div>
@@ -936,6 +1216,18 @@ export default function PrescriptionForm({
                     <option value="sans">Jakarta Friendly</option>
                     <option value="serif">Classic Editorial Georgia</option>
                     <option value="clinical">Standard Clinical Sans</option>
+                    <option value="playfair">Playfair Display Elegant</option>
+                    <option value="space">Space Grotesk Modern</option>
+                    <option value="mono">JetBrains Mono Code style</option>
+                    <option value="outfit">Outfit Contemporary</option>
+                    <option value="merriweather">Merriweather Serif</option>
+                    <option value="poppins">Poppins Geometric</option>
+                    <option value="montserrat">Montserrat Strong</option>
+                    <option value="nunito">Nunito Cheerful Rounded</option>
+                    <option value="open-sans">Open Sans Neutral</option>
+                    <option value="courier">Courier Typewriter classic</option>
+                    <option value="lora">Lora Soft Serif</option>
+                    <option value="fira">Fira Sans Technical</option>
                   </select>
                 </div>
 
@@ -1016,7 +1308,7 @@ export default function PrescriptionForm({
                   />
                 </div>
                 <p className="text-[10px] text-slate-400 leading-normal italic">
-                  Draw above using a tablet pen or mouse, and it is instantly saved as a secure localized template on Dr. Neeladri Dawn's letterhead!
+                  Draw above using a tablet pen or mouse, and it is instantly saved as a secure localized template on your letterhead!
                 </p>
               </div>
             )}
@@ -1042,20 +1334,11 @@ export default function PrescriptionForm({
       <div className="bg-slate-50/80 border-t border-slate-100 p-4 shrink-0 space-y-2">
         <button
           type="button"
-          onClick={onPrint}
-          className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
-        >
-          <Printer className="w-4 h-4" />
-          <span>Launch System Print / PDF Export (A4)</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={clearAllPrescriptionData}
-          className="w-full py-2 border border-slate-250 bg-white hover:bg-slate-100 text-slate-600 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
+          onClick={clearActiveTabDetails}
+          className="w-full py-2.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-bold rounded-xl shadow-sm transition-all hover:text-red-650 hover:bg-red-50/40 hover:border-red-150 flex items-center justify-center gap-1.5 cursor-pointer"
         >
           <RotateCcw className="w-3.5 h-3.5" />
-          <span>Clear Profile Details</span>
+          <span>{getClearButtonLabel()}</span>
         </button>
       </div>
 

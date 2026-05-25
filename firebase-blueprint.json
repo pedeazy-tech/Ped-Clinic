@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "doctorProfiles": {
+      "title": "DoctorProfile",
+      "description": "Profile information of the pediatrician",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth unique ID" },
+        "name": { "type": "string", "description": "Doctor's name with prefix" },
+        "speciality": { "type": "string", "description": "Doctor's specialization details" },
+        "registrationNumber": { "type": "string", "description": "Medical Council registration" },
+        "clinicName": { "type": "string", "description": "Name of the consultation clinic" },
+        "clinicPhone": { "type": "string", "description": "Phone number for appointments" },
+        "clinicAddress": { "type": "string", "description": "Physical address of the clinic" },
+        "email": { "type": "string", "description": "Contact email address" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last update" }
+      },
+      "required": ["uid", "name", "speciality", "email"]
+    },
+    "prescriptions": {
+      "title": "Prescription",
+      "description": "Prescription records containing patient details, chief complaints, findings, and medications",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique record key" },
+        "userId": { "type": "string", "description": "User UID who owns the prescription" },
+        "patient": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "age": { "type": "string" },
+            "gender": { "type": "string" },
+            "weight": { "type": "string" },
+            "height": { "type": "string" },
+            "temp": { "type": "string" },
+            "pulse": { "type": "string" },
+            "bp": { "type": "string" },
+            "spo2": { "type": "string" },
+            "date": { "type": "string" },
+            "feedingType": { "type": "string" },
+            "immunizationUpToDate": { "type": "boolean" }
+          }
+        },
+        "chiefComplaints": {
+          "type": "array",
+          "description": "Symptoms of the patient"
+        },
+        "clinicalFindings": {
+          "type": "array",
+          "description": "On examination findings"
+        },
+        "diagnosis": { "type": "string" },
+        "medications": {
+          "type": "array",
+          "description": "List of active prescription drugs and frequencies"
+        },
+        "advice": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "patient", "medications"]
+    },
+    "favoriteDrugs": {
+      "title": "FavoriteDrug",
+      "description": "Doctor's customized frequently used pediatric medications list",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Drug ID within references" },
+        "name": { "type": "string", "description": "Name of the drug" },
+        "salts": { "type": "string" },
+        "standardDose": { "type": "string" },
+        "recommendedFrequency": { "type": "string" },
+        "category": { "type": "string" },
+        "strengthOptions": { "type": "array" }
+      },
+      "required": ["id", "name"]
+    }
+  },
+  "firestore": {
+    "/doctors/{doctorId}": {
+      "schema": "doctorProfiles",
+      "description": "Pediatrician details and preferences"
+    },
+    "/prescriptions/{prescriptionId}": {
+      "schema": "prescriptions",
+      "description": "Prescription documents authored by doctors"
+    },
+    "/doctors/{doctorId}/favorites/{favoriteId}": {
+      "schema": "favoriteDrugs",
+      "description": "Favorited drug quick formulas"
+    }
+  }
+}

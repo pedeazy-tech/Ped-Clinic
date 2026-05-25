@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default catch-all deny safety-net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive / Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 1. Doctor Profiles Collection
+    match /doctors/{doctorId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(doctorId) 
+                      && incoming().uid == doctorId
+                      && incoming().name is string && incoming().name.size() > 0 && incoming().name.size() <= 100
+                      && incoming().email is string && incoming().email.size() > 0 && incoming().email.size() <= 100
+                      && incoming().speciality is string && incoming().speciality.size() <= 150;
+                      
+      allow update: if isOwner(doctorId)
+                      && incoming().uid == existing().uid
+                      && incoming().name is string && incoming().name.size() > 0 && incoming().name.size() <= 100
+                      && incoming().email == existing().email // Email is immutable
+                      && incoming().speciality is string && incoming().speciality.size() <= 150;
+                      
+      allow delete: if isOwner(doctorId);
+
+      // Sub-collection of favorite drugs
+      match /favorites/{favoriteId} {
+        allow read: if isOwner(doctorId);
+        allow write: if isOwner(doctorId) && isValidId(favoriteId);
+      }
+    }
+
+    // 2. Prescriptions Collection
+    match /prescriptions/{prescriptionId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn() 
+                      && incoming().userId == request.auth.uid
+                      && incoming().id == prescriptionId
+                      && incoming().patient is map
+                      && incoming().patient.name is string && incoming().patient.name.size() <= 150
+                      && incoming().medications is list
+                      && incoming().medications.size() <= 50; // Bound list
+                      
+      allow update: if isSignedIn()
+                      && existing().userId == request.auth.uid
+                      && incoming().userId == existing().userId
+                      && incoming().patient is map
+                      && incoming().patient.name is string && incoming().patient.name.size() <= 150
+                      && incoming().medications is list
+                      && incoming().medications.size() <= 50;
+
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // 3. Feedbacks Collection (Anonymous submissions)
+    match /feedbacks/{feedbackId} {
+      // Direct access from anonymous users to create, but NO reads, updates, or edits to protect privacy
+      allow create: if incoming().message is string 
+                      && incoming().message.size() >= 5 
+                      && incoming().message.size() <= 2000
+                      && incoming().timestamp == request.time;
+      allow read, update, delete: if false;
+    }
+  }
+}

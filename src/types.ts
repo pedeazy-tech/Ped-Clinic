@@ -3,6 +3,7 @@ export interface PatientInfo {
   age: string;
   gender: 'Boy' | 'Girl' | 'Other' | '';
   weight: string; // Crucial for pediatric dosage calculation
+  height: string; // Height of the child
   temp: string; // Temperature in Fahrenheit
   pulse: string; // Heart rate / Pulse
   bp: string; // Blood pressure (rare in toddlers, but used in older kids)
@@ -10,6 +11,8 @@ export interface PatientInfo {
   date: string;
   feedingType: 'Breastfed' | 'Formula' | 'Mixed' | 'Solid/Regular' | '';
   immunizationUpToDate: boolean;
+  immunizationStatus?: 'up_to_date' | 'not_up_to_date';
+  missingVaccines?: string;
 }
 
 export interface Medication {
@@ -28,11 +31,11 @@ export interface LetterheadSettings {
   watermark: 'bear' | 'stethoscope' | 'shield' | 'none';
   showVitals: boolean;
   showClinicalFeed: boolean; // Left sidebar for complaints, findings, milestones
-  logoStyle: 'cute-panda' | 'stethoscope-pulse' | 'happy-baby' | 'minimalist';
+  logoStyle: 'cute-panda' | 'stethoscope-pulse' | 'happy-baby' | 'minimalist' | 'teddy-bear' | 'shield-heart' | 'baby-carriage' | 'little-sun' | 'cute-rocket' | 'happy-tooth' | 'clinical-apple' | 'toy-blocks' | 'sleeping-owl' | 'baby-pram';
   qrCodeLink: string;
   qrCodeEnabled: boolean;
   gridPaper: boolean;
-  fontStyle: 'sans' | 'serif' | 'clinical';
+  fontStyle: 'sans' | 'serif' | 'clinical' | 'playfair' | 'space' | 'mono' | 'outfit' | 'merriweather' | 'poppins' | 'montserrat' | 'nunito' | 'open-sans' | 'courier' | 'lora' | 'fira';
   customAdvice: string;
   nextFollowUp: string; // Follow-up details
   signatureMode: 'text' | 'draw' | 'none';
@@ -47,6 +50,7 @@ export interface Prescription {
   clinicalFindings: string[];
   diagnosis: string;
   medications: Medication[];
+  previousMedications?: string;
   advice: string;
   createdAt: string;
 }
@@ -61,4 +65,15 @@ export interface PediatricDrugRef {
     formula_mg_per_ml: number; // e.g., 24 (120/5)
   }[];
   category: 'Fever' | 'Cold & Cough' | 'Antibiotics' | 'Anti-emetic/Stomach' | 'Allergy' | 'Supplements';
+}
+
+export interface DoctorProfile {
+  name: string;
+  speciality: string;
+  registrationNumber: string;
+  clinicName: string;
+  clinicAddress: string;
+  clinicPhone: string;
+  clinicTimings: string;
+  email: string;
 }

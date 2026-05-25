@@ -1,11 +1,16 @@
 import React from 'react';
-import { Prescription, LetterheadSettings } from '../types';
-import { StethoscopeHeart, CutePanda, HappyBaby, MinimalistCross } from './PediatricLogos';
+import { Prescription, LetterheadSettings, DoctorProfile } from '../types';
+import { 
+  StethoscopeHeart, CutePanda, HappyBaby, MinimalistCross, 
+  TeddyBear, ShieldHeart, BabyCarriage, LittleSun, CuteRocket, 
+  HappyTooth, ClinicalApple, ToyBlocks, SleepingOwl, BabyPram 
+} from './PediatricLogos';
 import { Phone, Mail, MapPin, Clock, Award, ShieldCheck, Clipboard, HeartCrack, CalendarClock } from 'lucide-react';
 
 interface PrescriptionPreviewProps {
   prescription: Prescription;
   settings: LetterheadSettings;
+  doctorProfile: DoctorProfile;
   themeColors: {
     primary: string;
     secondary: string;
@@ -15,8 +20,8 @@ interface PrescriptionPreviewProps {
   };
 }
 
-export default function PrescriptionPreview({ prescription, settings, themeColors }: PrescriptionPreviewProps) {
-  const { name, age, gender, weight, temp, pulse, bp, spo2, date, feedingType, immunizationUpToDate } = prescription.patient;
+export default function PrescriptionPreview({ prescription, settings, doctorProfile, themeColors }: PrescriptionPreviewProps) {
+  const { name, age, gender, weight, height, temp, pulse, bp, spo2, date, feedingType, immunizationUpToDate, immunizationStatus, missingVaccines } = prescription.patient;
 
   // Render the selected SVG Logo
   const renderLogo = () => {
@@ -27,6 +32,26 @@ export default function PrescriptionPreview({ prescription, settings, themeColor
         return <HappyBaby className="w-16 h-16 text-blue-600 print:text-blue-700" color={themeColors.primary} />;
       case 'stethoscope-pulse':
         return <StethoscopeHeart className="w-16 h-16 text-blue-600 print:text-blue-700" color={themeColors.primary} />;
+      case 'teddy-bear':
+        return <TeddyBear className="w-16 h-16" color={themeColors.primary} />;
+      case 'shield-heart':
+        return <ShieldHeart className="w-16 h-16" color={themeColors.primary} />;
+      case 'baby-carriage':
+        return <BabyCarriage className="w-16 h-16" color={themeColors.primary} />;
+      case 'little-sun':
+        return <LittleSun className="w-16 h-16" color={themeColors.primary} />;
+      case 'cute-rocket':
+        return <CuteRocket className="w-16 h-16" color={themeColors.primary} />;
+      case 'happy-tooth':
+        return <HappyTooth className="w-16 h-16" color={themeColors.primary} />;
+      case 'clinical-apple':
+        return <ClinicalApple className="w-16 h-16" color={themeColors.primary} />;
+      case 'toy-blocks':
+        return <ToyBlocks className="w-16 h-16" color={themeColors.primary} />;
+      case 'sleeping-owl':
+        return <SleepingOwl className="w-16 h-16" color={themeColors.primary} />;
+      case 'baby-pram':
+        return <BabyPram className="w-16 h-16" color={themeColors.primary} />;
       case 'minimalist':
       default:
         return <MinimalistCross className="w-14 h-14 text-blue-600 print:text-blue-700" color={themeColors.primary} />;
@@ -86,13 +111,35 @@ export default function PrescriptionPreview({ prescription, settings, themeColor
     );
   };
 
+  const getFontFamily = () => {
+    switch (settings.fontStyle) {
+      case 'serif': return 'Georgia, serif';
+      case 'clinical': return 'System-ui, sans-serif';
+      case 'playfair': return '"Playfair Display", serif';
+      case 'space': return '"Space Grotesk", sans-serif';
+      case 'mono': return '"JetBrains Mono", monospace';
+      case 'outfit': return '"Outfit", sans-serif';
+      case 'merriweather': return '"Merriweather", serif';
+      case 'poppins': return '"Poppins", sans-serif';
+      case 'montserrat': return '"Montserrat", sans-serif';
+      case 'nunito': return '"Nunito", sans-serif';
+      case 'open-sans': return '"Open Sans", sans-serif';
+      case 'courier': return '"Courier Prime", monospace';
+      case 'lora': return '"Lora", serif';
+      case 'fira': return '"Fira Sans", sans-serif';
+      case 'sans':
+      default: return 'var(--font-sans)';
+    }
+  };
+
   return (
     <div
+      id="clinical-prescription-paper"
       className={`print-page w-full bg-white text-slate-800 shadow-xl print:shadow-none border-x border-b border-slate-200 print:border-none relative flex flex-col justify-between overflow-hidden p-8 ${
         settings.gridPaper ? 'watermark-bg' : ''
       }`}
       style={{
-        fontFamily: settings.fontStyle === 'serif' ? 'Georgia, serif' : settings.fontStyle === 'clinical' ? 'System-ui, sans-serif' : 'var(--font-sans)',
+        fontFamily: getFontFamily(),
         minHeight: '297mm', // strict A4 ratio min height on desktop
         borderTop: `8px solid ${themeColors.primary}`
       }}
@@ -115,49 +162,58 @@ export default function PrescriptionPreview({ prescription, settings, themeColor
             {renderLogo()}
             <div className="space-y-0.5">
               <h1 className="text-xl font-bold tracking-tight font-display" style={{ color: themeColors.primary }}>
-                Dr. Neeladri Dawn
+                {doctorProfile.name || 'Dr. Neeladri Dawn'}
               </h1>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 animate-fade-in">
                 <span className="bg-blue-50/80 text-blue-700 print:bg-slate-100 print:text-black text-[11px] font-semibold px-2 py-0.5 rounded-full border border-blue-100/50 font-sans">
-                  MBBS, MD Paediatrics (JR)
+                  {doctorProfile.speciality || 'Paediatrician & Child Specialist'}
                 </span>
               </div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest font-sans">
-                Paediatrician & Child Specialist
-              </p>
               
-              <div className="flex items-center gap-1 mt-1 text-[11px] text-slate-500 font-mono">
-                <ShieldCheck className="w-3.5 h-3.5" style={{ color: themeColors.secondary }} />
-                <span>Regd. No: <strong className="text-slate-700 font-semibold font-sans">93929 (WBMC)</strong></span>
-              </div>
+              {doctorProfile.registrationNumber && (
+                <div className="flex items-center gap-1 mt-1 text-[11px] text-slate-500 font-mono">
+                  <ShieldCheck className="w-3.5 h-3.5" style={{ color: themeColors.secondary }} />
+                  <span>Regd. No: <strong className="text-slate-750 font-semibold font-sans">{doctorProfile.registrationNumber}</strong></span>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Clinic address & hours */}
           <div className="text-right space-y-1 text-xs text-slate-600 max-w-xs">
-            <div className="flex items-center gap-1.5 justify-end">
-              <span className="font-semibold text-slate-800">Sonarpur Consultation Clinic</span>
-              <MapPin className="w-3.5 h-3.5 text-slate-400" />
-            </div>
+            {doctorProfile.clinicName && (
+              <div className="flex items-center gap-1.5 justify-end">
+                <span className="font-semibold text-slate-800">{doctorProfile.clinicName}</span>
+                <MapPin className="w-3.5 h-3.5 text-slate-400" />
+              </div>
+            )}
             
-            <p className="text-slate-500 leading-relaxed text-[11px]">
-              Clinic Chambers: Sonarpur, South 24 Parganas, WB
-            </p>
+            {doctorProfile.clinicAddress && (
+              <p className="text-slate-500 leading-relaxed text-[11px]">
+                {doctorProfile.clinicAddress}
+              </p>
+            )}
             
-            <div className="flex items-center gap-1.5 justify-end text-[11px] text-slate-500">
-              <span>Mon-Sat 9AM to 4PM</span>
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
-            </div>
+            {doctorProfile.clinicTimings && (
+              <div className="flex items-center gap-1.5 justify-end text-[11px] text-slate-500">
+                <span>{doctorProfile.clinicTimings}</span>
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+              </div>
+            )}
 
-            <div className="flex items-center gap-1.5 justify-end text-[11px] font-mono text-slate-500">
-              <span>+91 8918525976</span>
-              <Phone className="w-3.5 h-3.5 text-slate-400" />
-            </div>
+            {doctorProfile.clinicPhone && (
+              <div className="flex items-center gap-1.5 justify-end text-[11px] font-mono text-slate-500">
+                <span>{doctorProfile.clinicPhone}</span>
+                <Phone className="w-3.5 h-3.5 text-slate-400" />
+              </div>
+            )}
             
-            <div className="flex items-center gap-1.5 justify-end text-[11px] text-slate-500">
-              <span>neeladri18@outlook.com</span>
-              <Mail className="w-3.5 h-3.5 text-slate-400" />
-            </div>
+            {doctorProfile.email && (
+              <div className="flex items-center gap-1.5 justify-end text-[11px] text-slate-500">
+                <span>{doctorProfile.email}</span>
+                <Mail className="w-3.5 h-3.5 text-slate-400" />
+              </div>
+            )}
           </div>
         </div>
 
@@ -195,9 +251,16 @@ export default function PrescriptionPreview({ prescription, settings, themeColor
           </div>
 
           <div>
-            <span className="text-[10px] text-slate-400 block uppercase font-mono tracking-wider">Weight (Kg)</span>
+            <span className="text-[10px] text-slate-400 block uppercase font-mono tracking-wider">Weight</span>
             <span className="font-bold text-slate-800 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100/40">
               {weight ? `${weight} kg` : <span className="text-slate-300 italic font-normal">___</span>}
+            </span>
+          </div>
+
+          <div>
+            <span className="text-[10px] text-slate-400 block uppercase font-mono tracking-wider">Height</span>
+            <span className="font-semibold text-slate-700">
+              {height ? `${height} cm` : <span className="text-slate-300 italic font-normal">___</span>}
             </span>
           </div>
 
@@ -208,11 +271,16 @@ export default function PrescriptionPreview({ prescription, settings, themeColor
             </span>
           </div>
 
-          <div>
-            <span className="text-[10px] text-slate-400 block uppercase font-mono tracking-wider">Immunization</span>
-            <span className="font-medium text-slate-600">
-              {immunizationUpToDate ? '✓ Up-to-date' : '✗ Delayed/Pending'}
+          <div className="col-span-4 border-t border-slate-100/60 pt-2 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider">Immunization:</span>
+            <span className={`font-bold text-xs ${(immunizationStatus || (immunizationUpToDate ? 'up_to_date' : 'not_up_to_date')) === 'up_to_date' ? 'text-emerald-600' : 'text-amber-600'}`}>
+              {(immunizationStatus || (immunizationUpToDate ? 'up_to_date' : 'not_up_to_date')) === 'up_to_date' ? 'Up-to-date for Age' : 'Not Up-to-date'}
             </span>
+            {((immunizationStatus || (immunizationUpToDate ? 'up_to_date' : 'not_up_to_date')) === 'not_up_to_date') && missingVaccines && (
+              <span className="text-[11px] text-slate-700 italic font-semibold px-2 py-0.5 bg-amber-50 rounded border border-amber-200/50">
+                (Pending / Not Taken: {missingVaccines})
+              </span>
+            )}
           </div>
         </div>
 
@@ -387,6 +455,18 @@ export default function PrescriptionPreview({ prescription, settings, themeColor
                 </p>
               </div>
             )}
+
+            {prescription.previousMedications && (
+              <div className="mt-4 p-3 bg-slate-50/75 border border-slate-200/40 rounded-xl space-y-1 shadow-sm">
+                <h5 className="text-[9px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <span className="w-1 h-2 rounded bg-indigo-500"></span>
+                  <span>Active Maintenance / Past Medications</span>
+                </h5>
+                <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed font-semibold pl-2.5">
+                  {prescription.previousMedications}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -416,7 +496,7 @@ export default function PrescriptionPreview({ prescription, settings, themeColor
               </div>
             )}
             <p className="italic leading-normal">
-              ⚠️ <strong>Emergency Warning:</strong> In case of high-grade persistent fever, severe vomiting, fast breathing, or excessive lethargy, please report to Sonarpur emergency or a pediatric urgent care facility immediately.
+              ⚠️ <strong>Emergency Warning:</strong> In case of high-grade persistent fever, severe vomiting, fast breathing, or excessive lethargy, please report to an emergency pediatric care facility immediately.
             </p>
           </div>
 
@@ -424,7 +504,7 @@ export default function PrescriptionPreview({ prescription, settings, themeColor
           <div className="text-right space-y-1 flex flex-col items-end">
             {settings.signatureMode === 'text' ? (
               <div className="font-serif italic text-base text-blue-800 pr-2 font-semibold">
-                {settings.signatureText || 'Dr. Neeladri Dawn'}
+                {settings.signatureText || doctorProfile.name || 'Dr. Neeladri Dawn'}
               </div>
             ) : settings.signatureMode === 'draw' && settings.signatureDrawData ? (
               <img 
@@ -440,13 +520,15 @@ export default function PrescriptionPreview({ prescription, settings, themeColor
             <div className="border-t w-48 text-center pt-1 font-semibold text-slate-600 text-[10px] uppercase font-mono tracking-wider">
               Authorized Signature / Seal
             </div>
-            <div className="text-[9px] text-slate-400">Dr. Neeladri Dawn, MD (Paediatrics)</div>
+            <div className="text-[9px] text-slate-400">
+              {doctorProfile.name || 'Dr. Neeladri Dawn'}{doctorProfile.speciality ? `, ${doctorProfile.speciality}` : ''}
+            </div>
           </div>
         </div>
 
         {/* Bottom micro branding & credits */}
         <div className="flex justify-between items-center text-[9px] text-slate-400 border-t border-slate-100 pt-2 font-mono">
-          <span>Printed on official consultation letterhead of West Bengal MC (WBMC).</span>
+          <span>Printed on official consultation letterhead </span>
           <span className="font-semibold text-slate-350">Page 1 of 1 (A4)</span>
         </div>
       </div>

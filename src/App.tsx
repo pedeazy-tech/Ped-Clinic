@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Prescription, LetterheadSettings } from './types';
+import { motion, AnimatePresence } from 'motion/react';
+import { Prescription, LetterheadSettings, DoctorProfile } from './types';
 import PrescriptionForm from './components/PrescriptionForm';
 import PrescriptionPreview from './components/PrescriptionPreview';
-import { Stethoscope, HelpCircle, Eye, FileText, Printer, FileDown, Heart, Sparkles, CheckCircle, Info } from 'lucide-react';
+import GrowthImmunisationTab from './components/GrowthImmunisationTab';
+import { 
+  Stethoscope, HelpCircle, Eye, FileText, Printer, Heart, 
+  Sparkles, CheckCircle, Info, LogOut, MessageSquare, Send, 
+  Bot, RefreshCw, X, UserCheck, Shield, ClipboardCheck, Clock,
+  ChevronRight, TrendingUp
+} from 'lucide-react';
 
 const THEME_MAPPING = {
   royal: {
@@ -35,6 +42,33 @@ const THEME_MAPPING = {
   }
 };
 
+const BLANK_PRESCRIPTION = {
+  id: 'current-prescription',
+  patient: {
+    name: '',
+    age: '',
+    gender: '' as any,
+    weight: '',
+    height: '',
+    temp: '',
+    pulse: '',
+    bp: '',
+    spo2: '',
+    date: new Date().toISOString().split('T')[0],
+    feedingType: '' as any,
+    immunizationUpToDate: true,
+    immunizationStatus: 'up_to_date' as const,
+    missingVaccines: ''
+  },
+  chiefComplaints: [],
+  clinicalFindings: [],
+  diagnosis: '',
+  medications: [],
+  previousMedications: '',
+  advice: '',
+  createdAt: new Date().toISOString()
+};
+
 const DEFAULT_PRESCRIPTION: Prescription = {
   id: 'current-prescription',
   patient: {
@@ -42,13 +76,16 @@ const DEFAULT_PRESCRIPTION: Prescription = {
     age: '2 Years 4 Months',
     gender: 'Boy',
     weight: '12.5',
+    height: '88',
     temp: '101.4',
     pulse: '110',
     bp: '',
     spo2: '98',
     date: new Date().toISOString().split('T')[0],
     feedingType: 'Solid/Regular',
-    immunizationUpToDate: true
+    immunizationUpToDate: true,
+    immunizationStatus: 'up_to_date',
+    missingVaccines: ''
   },
   chiefComplaints: [
     'Fever: persistent high grade (>101°F) x 2 days',
@@ -83,6 +120,7 @@ const DEFAULT_PRESCRIPTION: Prescription = {
       notes: 'Diarrheal therapy. Complete full 14 day course.'
     }
   ],
+  previousMedications: 'Vitamin D3 drops (D3-Must) 1 ml once daily (long term maintainance)',
   advice: 'Give plenty of oral electrolyte hydration fluids (ORS). Sponging with room-temperature tap water if fever climbs. Light semi-solid food (Mashed Khichdi/Curd-Rice). Avoid cows milk temporarily.',
   createdAt: new Date().toISOString()
 };
@@ -105,17 +143,35 @@ const DEFAULT_SETTINGS: LetterheadSettings = {
 };
 
 export default function App() {
-  // Persistence Loading
+  // Doctor profile loading & state
+  const [doctorProfile, setDoctorProfile] = useState<DoctorProfile | null>(() => {
+    const saved = localStorage.getItem('doctor_profile_v1');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  // Clean up any potential dark class that might be left on documentElement
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+  }, []);
+
+  // Main prescription state (defaulting to a completely blank slate)
   const [prescription, setPrescription] = useState<Prescription>(() => {
     const saved = localStorage.getItem('active_prescription_v1');
     if (saved) {
       try {
         return JSON.parse(saved);
       } catch (e) {
-        return DEFAULT_PRESCRIPTION;
+        return JSON.parse(JSON.stringify(BLANK_PRESCRIPTION));
       }
     }
-    return DEFAULT_PRESCRIPTION;
+    return JSON.parse(JSON.stringify(BLANK_PRESCRIPTION));
   });
 
   const [settings, setSettings] = useState<LetterheadSettings>(() => {
@@ -130,8 +186,86 @@ export default function App() {
     return DEFAULT_SETTINGS;
   });
 
-  // Mobile viewport layout tracker ('edit' or 'view')
-  const [mobileMode, setMobileMode] = useState<'edit' | 'view'>('edit');
+  // Doctor Setup input fields (for onboarding screen)
+  const [setupName, setSetupName] = useState('');
+  const [setupSpeciality, setSetupSpeciality] = useState('');
+  const [setupRegNo, setSetupRegNo] = useState('');
+  const [setupClinicName, setSetupClinicName] = useState('');
+  const [setupClinicAddress, setSetupClinicAddress] = useState('');
+  const [setupClinicPhone, setSetupClinicPhone] = useState('');
+  const [setupClinicTimings, setSetupClinicTimings] = useState('');
+  const [setupEmail, setSetupEmail] = useState('');
+
+  // AI Chat states
+  const [aiExpanded, setAiExpanded] = useState(true);
+  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
+    {
+      role: 'assistant',
+      content: `Hello! I am your **Pediatric AI Companion**. 👋
+      
+I can assist with:
+- **Dosage computations** based on child weight (e.g., *15 mg/kg* for Paracetamol).
+- **Intervention suggestions** for cough, cold, fever, or gastroenteritis.
+- **Supportive parenting notes** to paste on pediatric prescriptions.
+
+How can I assist your consultation session today?`
+    }
+  ]);
+  const [userInput, setUserInput] = useState('');
+  const [isAiTyping, setIsAiTyping] = useState(false);
+
+  // AI Assistant anonymous feedback form state
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackSuccess, setFeedbackSuccess] = useState('');
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+
+  const handleSendFeedback = async () => {
+    if (!feedbackText.trim() || feedbackText.trim().length < 5) {
+      alert("Feedback message must be at least 5 characters long.");
+      return;
+    }
+    const messageContent = feedbackText.trim();
+    try {
+      setFeedbackLoading(true);
+      // Attempt backend capture first for logging/compliance
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: messageContent })
+      });
+      
+      // Complete redirect according to user request
+      setFeedbackSuccess("Redirecting to coolbuddy.neel@gmail.com...");
+      setFeedbackText('');
+      
+      // Perform direct location redirect using standard mailto scheme
+      window.location.href = `mailto:coolbuddy.neel@gmail.com?subject=Pediatric%20Prescription%20App%20Feedback&body=${encodeURIComponent(messageContent)}`;
+      
+      setTimeout(() => setFeedbackSuccess(''), 4500);
+    } catch (err) {
+      console.error("Feedback error:", err);
+      // Fallback redirect directly
+      window.location.href = `mailto:coolbuddy.neel@gmail.com?subject=Pediatric%20Prescription%20App%20Feedback&body=${encodeURIComponent(messageContent)}`;
+      setFeedbackSuccess("Redirected to coolbuddy.neel@gmail.com!");
+      setFeedbackText('');
+      setTimeout(() => setFeedbackSuccess(''), 4500);
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
+
+  const [mobileMode, setMobileMode] = useState<'edit' | 'view' | 'growth' | 'chat'>('edit');
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'prescription' | 'growth'>('prescription');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [showPrintHelp, setShowPrintHelp] = useState(false);
 
   // Write changes to local cached storage
@@ -149,40 +283,326 @@ export default function App() {
     window.print();
   };
 
+  // Profile management logins
+  const handleSaveProfile = async (profile: DoctorProfile) => {
+    localStorage.setItem('doctor_profile_v1', JSON.stringify(profile));
+    setDoctorProfile(profile);
+    
+    // Set dynamic signature text matching profile name
+    setSettings(prev => ({ ...prev, signatureText: profile.name }));
+
+    // Reset current prescription to blank slate
+    setPrescription(JSON.parse(JSON.stringify(BLANK_PRESCRIPTION)));
+  };
+
+  const handleCustomSetupLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const customProfile: DoctorProfile = {
+      name: setupName,
+      speciality: setupSpeciality,
+      registrationNumber: setupRegNo,
+      clinicName: setupClinicName,
+      clinicAddress: setupClinicAddress,
+      clinicPhone: setupClinicPhone,
+      clinicTimings: setupClinicTimings,
+      email: setupEmail
+    };
+    handleSaveProfile(customProfile);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('doctor_profile_v1');
+    setDoctorProfile(null);
+    setPrescription(JSON.parse(JSON.stringify(BLANK_PRESCRIPTION)));
+  };
+
+  // AI Chat communication
+  const handleSendMessage = async (customPrompt?: string) => {
+    const promptToSend = customPrompt || userInput;
+    if (!promptToSend.trim()) return;
+
+    const query = promptToSend;
+    if (!customPrompt) {
+      setUserInput('');
+    }
+
+    const currentHistory = [...chatMessages, { role: 'user' as const, content: query }];
+    setChatMessages(currentHistory);
+    setIsAiTyping(true);
+
+    try {
+      const resp = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ messages: currentHistory })
+      });
+
+      const data = await resp.json();
+      if (resp.ok) {
+        setChatMessages(prev => [...prev, { role: 'assistant', content: data.text || "I was unable to retrieve a response, please try another query." }]);
+      } else {
+        setChatMessages(prev => [...prev, { role: 'assistant', content: `⚠️ **Error Code:** ${data.error || "Communication failure"}` }]);
+      }
+    } catch (err: any) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: `⚠️ Failed to reach the Pediatric AI Assistant. Is your dev server or secret configured?` }]);
+    } finally {
+      setIsAiTyping(false);
+    }
+  };
+
+  // Diagnostic prefill clear
+  const handleWipePrescription = () => {
+    setPrescription(JSON.parse(JSON.stringify(BLANK_PRESCRIPTION)));
+  };
+
+  // ---------------- ONBOARDING GATE ----------------
+  if (!doctorProfile) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 select-none antialiased relative bg-[#f8fafc] text-slate-800">
+        <motion.div 
+          initial={{ opacity: 0, y: 15, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
+          className="max-w-2xl w-full border border-slate-200 shadow-xl rounded-3xl overflow-hidden bg-white"
+        >
+          
+          {/* Top pediatric brand banner */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-8 relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-y-6 translate-x-3">
+              <Stethoscope className="w-64 h-64" />
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-white/10 rounded-2xl">
+                <Stethoscope className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <span className="text-xs uppercase font-extrabold tracking-widest text-blue-100">designed by Dr. Neeladri</span>
+                <h1 className="text-2xl font-black tracking-tight font-display">PediScript Lite</h1>
+              </div>
+            </div>
+            <p className="text-blue-100/90 text-xs mt-3.5 leading-relaxed max-w-lg font-medium">
+              A high-fidelity consultation platform optimized for child specialists. Enter your professional clinic parameters first to enter the system.
+            </p>
+          </div>
+
+          <div className="p-8 space-y-6">
+            {/* Custom Doctor setup form */}
+            <form onSubmit={handleCustomSetupLogin} className="space-y-4">
+              <div className="flex items-center gap-2 border-b-2 pb-1 border-slate-100">
+                <UserCheck className="w-4 h-4 text-slate-500" />
+                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Enter Custom Doctor Credentials</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* Doctor Name */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Doctor Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={setupName}
+                    onChange={(e) => setSetupName(e.target.value)}
+                    placeholder="e.g. Dr. John Doe"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none text-slate-850"
+                  />
+                </div>
+
+                {/* Specialty */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Speciality / Qualifications</label>
+                  <input
+                    type="text"
+                    required
+                    value={setupSpeciality}
+                    onChange={(e) => setSetupSpeciality(e.target.value)}
+                    placeholder="e.g. Pediatrician • MBBS, MD"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none text-slate-800"
+                  />
+                </div>
+
+                {/* Registration */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Medical Registration Number</label>
+                  <input
+                    type="text"
+                    required
+                    value={setupRegNo}
+                    onChange={(e) => setSetupRegNo(e.target.value)}
+                    placeholder="e.g. Regd No: 00000 (WBMC)"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none text-slate-800"
+                  />
+                </div>
+
+                {/* Email */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Professional Consultation Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={setupEmail}
+                    onChange={(e) => setSetupEmail(e.target.value)}
+                    placeholder="e.g. doctor@hospital.com"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none text-slate-800"
+                  />
+                </div>
+
+                {/* Clinic Name */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Clinic / Chambers Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={setupClinicName}
+                    onChange={(e) => setSetupClinicName(e.target.value)}
+                    placeholder="e.g. Calcutta Consultation Clinic"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none text-slate-800"
+                  />
+                </div>
+
+                {/* Timings */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Working Hours / Timings</label>
+                  <input
+                    type="text"
+                    required
+                    value={setupClinicTimings}
+                    onChange={(e) => setSetupClinicTimings(e.target.value)}
+                    placeholder="e.g. Mon-Sat 9AM to 4PM"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none text-slate-800"
+                  />
+                </div>
+
+                {/* Phone */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Clinic Phone / WA Contact</label>
+                  <input
+                    type="text"
+                    required
+                    value={setupClinicPhone}
+                    onChange={(e) => setSetupClinicPhone(e.target.value)}
+                    placeholder="e.g. +91 9999999999"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none text-slate-800"
+                  />
+                </div>
+
+                {/* Address */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Clinic Address</label>
+                  <input
+                    type="text"
+                    required
+                    value={setupClinicAddress}
+                    onChange={(e) => setSetupClinicAddress(e.target.value)}
+                    placeholder="e.g. Kolkata, WB"
+                    className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none text-slate-800"
+                  />
+                </div>
+
+              </div>
+
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+                >
+                  💾 Save Profile & Start Consultation
+                </button>
+              </div>
+            </form>
+          </div>
+          
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ---------------- MAIN WORKSPACE RUNTIME ----------------
   return (
-    <div className="min-h-screen bg-[#f1f5f9] text-slate-800 flex flex-col selection:bg-blue-500/20 antialiased">
+    <div className="min-h-screen flex flex-col selection:bg-blue-500/20 antialiased bg-[#f1f5f9] text-slate-800">
       
-      {/* Upper Navigation & Doctor Badge Banner */}
-      <header className="bg-white border-b border-slate-205 py-3.5 px-6 shadow-sm shrink-0 no-print">
+      {/* Upper Navigation & Dynamic Doctor Details */}
+      <header className="border-b py-3.5 px-6 shadow-sm shrink-0 no-print bg-white border-slate-200">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
           
-          {/* Logo brand */}
+          {/* Logo brand / Dynamic doctor name */}
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-600 rounded-xl text-white shadow-md shadow-blue-500/20">
+            <div className="p-2 bg-blue-600 rounded-xl text-white shadow-md shadow-blue-500/10">
               <Stethoscope className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-800 tracking-tight text-base">Dr. Neeladri Dawn's Portal</span>
-                <span className="bg-emerald-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full flex items-center gap-0.5 shadow-sm">
-                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping"></span>
-                  <span>WBMC Registered</span>
-                </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-bold tracking-tight text-base text-slate-800">{doctorProfile.name}</span>
+                {doctorProfile.registrationNumber && (
+                  <span className="border text-[10px] font-mono font-medium px-2 py-0.1 rounded-md bg-slate-100 border-slate-200 text-slate-500">
+                    Reg: {doctorProfile.registrationNumber}
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-slate-400 font-medium">Professional Pediatric Prescription & A4 Letterhead Generator</p>
+              <p className="text-xs font-medium text-slate-500">
+                {doctorProfile.clinicName || 'Pediatric Clinic Workspace'} • {doctorProfile.clinicTimings}
+              </p>
             </div>
           </div>
-
+ 
           {/* Action Header controls */}
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-3 md:flex md:flex-wrap items-center justify-end gap-1.5 md:gap-2 text-slate-800 w-full md:w-auto animate-fade-in">
+            
+            {/* Desktop-only Workspace Switcher */}
+            <div className="hidden lg:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 select-none mr-1.5 shrink-0 no-print">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveWorkspaceTab('prescription');
+                }}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeWorkspaceTab === 'prescription'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Prescription Workspace</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveWorkspaceTab('growth');
+                }}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeWorkspaceTab === 'growth'
+                    ? 'bg-white text-indigo-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>Growth and NIS</span>
+              </button>
+            </div>
+
+            {/* Wipe Active Patient Content */}
             <button
               type="button"
-              onClick={() => setShowPrintHelp(!showPrintHelp)}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold border border-slate-200"
-              title="How to print perfectly"
+              onClick={handleWipePrescription}
+              className="bg-red-50 hover:bg-red-100 text-red-650 p-2 md:p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 text-[10px] md:text-xs font-bold border border-red-150 w-full md:w-auto"
+              title="Clear current patient fields and start fresh"
             >
-              <HelpCircle className="w-4 h-4 text-blue-600" />
-              <span>Perfect PDF Guide</span>
+              <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">New Patient</span>
+            </button>
+
+            {/* Logout/Exit Doctor */}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="bg-slate-50 hover:bg-red-50 hover:text-red-600 text-slate-500 p-2 md:p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 text-[10px] md:text-xs font-bold border border-slate-200 w-full md:w-auto"
+              title="Sign out of current doctor session"
+            >
+              <LogOut className="w-3.5 h-3.5 shrink-0 text-red-400" />
+              <span className="truncate">Switch Profile</span>
             </button>
 
             {/* Print trigger */}
@@ -190,10 +610,10 @@ export default function App() {
               type="button"
               onClick={handlePrint}
               style={{ background: activeTheme.primary }}
-              className="hover:brightness-110 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all hover:shadow-lg active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-md"
+              className="hover:brightness-110 text-white p-2 md:px-4 md:py-2.5 rounded-xl text-[10px] md:text-xs font-extrabold transition-all hover:shadow-lg active:scale-95 flex items-center justify-center gap-1 cursor-pointer shadow-md w-full md:w-auto"
             >
-              <Printer className="w-4 h-4" />
-              <span>Print A4 Prescription</span>
+              <Printer className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Print</span>
             </button>
           </div>
 
@@ -201,99 +621,355 @@ export default function App() {
       </header>
 
       {/* Main Core Area Split */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start overflow-hidden">
+      <main className={`flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 overflow-hidden ${isMobile ? 'pb-28' : ''}`}>
         
         {/* Help banner details (Expandable) */}
         {showPrintHelp && (
-          <div className="lg:col-span-12 bg-blue-50 border border-blue-200 p-4 rounded-2xl flex items-start gap-3 shadow-inner no-print transition-all">
+          <div className="mb-5 bg-blue-50 border border-blue-200 p-5 rounded-2xl flex items-start gap-3 shadow-inner no-print transition-all">
             <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
             <div className="space-y-1.5 text-xs text-slate-600">
-              <h4 className="font-bold text-slate-800 text-sm">💡 Pediatrician Instruction Guide for Pristine A4 Printing & Saving:</h4>
+              <h4 className="font-bold text-slate-800 text-sm">💡 Pediatrician Instruction Guide for A4 Printing & Saving:</h4>
               <p className="leading-relaxed">
-                This designer generates standard **ISO A4 format (210mm × 297mm)** outputs dynamically. To ensure it fits exactly on one physical paper sheet, apply these settings in your native browser's Print dialog preview:
+                This layouts generate exact standard **ISO A4 formats (210mm × 297mm)**. To ensure optimal output on physical sheets, apply these choices on your system Print Dialog:
               </p>
-              <ol className="list-decimal pl-5 space-y-1 font-medium mt-1">
-                <li>Under <strong className="text-blue-800">Destination</strong>, choose <strong className="text-blue-800">"Save as PDF"</strong> or your office office printer.</li>
-                <li>Set <strong className="text-blue-800">Margins</strong> to <strong className="text-blue-800">"None"</strong> or <strong className="text-blue-800">"Minimum"</strong> (this preserves our 14mm clinical safe paddings).</li>
-                <li>Ensure the checkbox for <strong className="text-blue-800">"Background Graphics"</strong> is <strong className="text-blue-800">checked/enabled</strong> (to render logos, grids, status highlights, and watermarks!).</li>
-                <li>Uncheck <strong className="text-blue-800">"Headers and Footers"</strong> to strip standard browser URL stamps and page numbering.</li>
+              <ol className="list-decimal pl-5 space-y-1 font-medium mt-1 text-slate-600">
+                <li>Choose <strong className="text-blue-800">"Save as PDF"</strong> or your office laserjet printer.</li>
+                <li>Set <strong className="text-blue-800">Margins</strong> to <strong className="text-blue-800">"None"</strong> or <strong className="text-blue-800">"Minimum"</strong>.</li>
+                <li>Ensure the checkpoint for <strong className="text-blue-800">"Background Graphics"</strong> is <strong className="text-blue-800">checked/enabled</strong> (critical to render themes, watermark, grids, and logos).</li>
+                <li>Uncheck <strong className="text-blue-800">"Headers and Footers"</strong> to drop system URL and time stamps.</li>
               </ol>
             </div>
           </div>
         )}
 
-        {/* Mobile View Toggle Rail */}
-        <div className="lg:hidden col-span-1 flex items-center gap-1 bg-slate-200/60 rounded-xl p-1 no-print">
-          <button
-            type="button"
-            onClick={() => setMobileMode('edit')}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${
-              mobileMode === 'edit' ? 'bg-white text-blue-600 shadow' : 'text-slate-500'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>Form Editor</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileMode('view')}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${
-              mobileMode === 'view' ? 'bg-white text-blue-600 shadow' : 'text-slate-500'
-            }`}
-          >
-            <Eye className="w-4 h-4" />
-            <span>A4 Letterhead</span>
-          </button>
-        </div>
-
-        {/* Column 1: Form Inputs (~5 cols) */}
-        <section className={`lg:col-span-5 ${mobileMode !== 'edit' ? 'hidden lg:block' : ''} no-print`}>
-          <PrescriptionForm
-            prescription={prescription}
-            setPrescription={setPrescription}
-            settings={settings}
-            setSettings={setSettings}
-            onPrint={handlePrint}
-            themeColors={activeTheme}
-          />
-        </section>
-
-        {/* Column 2: Printable letterhead screen mapping (~7 cols) */}
-        <section 
-          id="prescription-rendered-section" 
-          className={`lg:col-span-7 flex justify-center items-start lg:sticky lg:top-6 overflow-y-auto ${
-            mobileMode !== 'view' ? 'hidden lg:flex' : ''
-          }`}
-        >
-          <div className="w-full max-w-[210mm] border border-slate-300 shadow-2xl rounded-2xl overflow-hidden bg-white print:border-none print:shadow-none print:rounded-none">
-            
-            {/* Screen Helper banner */}
-            <div className="bg-slate-100 flex items-center justify-between px-4 py-2 border-b text-[11px] font-medium text-slate-500 no-print select-none">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span>Live Interactive A4 Letterhead Template View</span>
-              </span>
-              <span>210mm × 297mm Portrait</span>
-            </div>
-
-            {/* The printable prescription target */}
-            <PrescriptionPreview
-              prescription={prescription}
-              settings={settings}
-              themeColors={activeTheme}
-            />
+        {/* Mobile Floating Action Nav Bar with sliding layoutId background pill */}
+        {isMobile && (
+          <div className="fixed bottom-6 left-4 right-4 z-50 flex items-center gap-1 bg-white/85 backdrop-blur-xl border border-slate-200/80 rounded-2xl p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.12)] no-print max-w-md mx-auto">
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMode('edit');
+                setActiveWorkspaceTab('prescription');
+              }}
+              className="flex-1 py-1.5 text-xs font-bold rounded-xl transition-all flex flex-col items-center justify-center gap-1 relative cursor-pointer bg-transparent border-none"
+            >
+              {mobileMode === 'edit' && (
+                <motion.div
+                  layoutId="activeTabIndicator"
+                  className="absolute inset-0 bg-blue-50 border border-blue-100 rounded-xl shadow-sm"
+                  transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                />
+              )}
+              <FileText className={`w-4 h-4 z-10 transition-colors duration-200 ${mobileMode === 'edit' ? 'text-blue-600 scale-105' : 'text-slate-400'}`} />
+              <span className={`text-[9px] z-10 font-bold tracking-tight transition-colors duration-200 ${mobileMode === 'edit' ? 'text-blue-600 font-extrabold' : 'text-slate-500'}`}>Patient</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMode('view');
+                setActiveWorkspaceTab('prescription');
+              }}
+              className="flex-1 py-1.5 text-xs font-bold rounded-xl transition-all flex flex-col items-center justify-center gap-1 relative cursor-pointer bg-transparent border-none"
+            >
+              {mobileMode === 'view' && (
+                <motion.div
+                  layoutId="activeTabIndicator"
+                  className="absolute inset-0 bg-indigo-50 border border-indigo-100 rounded-xl shadow-sm"
+                  transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                />
+              )}
+              <Eye className={`w-4 h-4 z-10 transition-colors duration-200 ${mobileMode === 'view' ? 'text-indigo-600 scale-105' : 'text-slate-400'}`} />
+              <span className={`text-[9px] z-10 font-bold tracking-tight transition-colors duration-200 ${mobileMode === 'view' ? 'text-indigo-600 font-extrabold' : 'text-slate-500'}`}>Prescription</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMode('growth');
+                setActiveWorkspaceTab('growth');
+              }}
+              className="flex-1 py-1.5 text-xs font-bold rounded-xl transition-all flex flex-col items-center justify-center gap-1 relative cursor-pointer bg-transparent border-none"
+            >
+              {mobileMode === 'growth' && (
+                <motion.div
+                  layoutId="activeTabIndicator"
+                  className="absolute inset-x-0 inset-y-0 bg-indigo-50 border border-indigo-100 rounded-xl shadow-sm"
+                  transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                />
+              )}
+              <TrendingUp className={`w-4 h-4 z-10 transition-colors duration-200 ${mobileMode === 'growth' ? 'text-indigo-600 scale-105' : 'text-slate-400'}`} />
+              <span className={`text-[9px] z-10 font-bold tracking-tight transition-colors duration-200 ${mobileMode === 'growth' ? 'text-indigo-600 font-extrabold' : 'text-slate-500'}`}>Growth and NIS</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMode('chat');
+                setActiveWorkspaceTab('prescription');
+              }}
+              className="flex-1 py-1.5 text-xs font-bold rounded-xl transition-all flex flex-col items-center justify-center gap-1 relative cursor-pointer bg-transparent border-none"
+            >
+              {mobileMode === 'chat' && (
+                <motion.div
+                  layoutId="activeTabIndicator"
+                  className="absolute inset-0 bg-violet-50 border border-violet-100 rounded-xl shadow-sm"
+                  transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                />
+              )}
+              <MessageSquare className={`w-4 h-4 z-10 transition-colors duration-200 ${mobileMode === 'chat' ? 'text-violet-600 scale-105' : 'text-slate-400'}`} />
+              <span className={`text-[9px] z-10 font-bold tracking-tight transition-colors duration-200 ${mobileMode === 'chat' ? 'text-violet-600 font-extrabold' : 'text-slate-500'}`}>Help &amp; Support</span>
+            </button>
           </div>
-        </section>
+        )}
+
+        <AnimatePresence mode="wait">
+          {activeWorkspaceTab === 'prescription' ? (
+            <motion.div
+              key="prescription-workspace"
+              initial={{ opacity: 0, scale: 0.99 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.99 }}
+              transition={{ duration: 0.25 }}
+              className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full"
+            >
+              {(!isMobile || mobileMode === 'edit') && (
+                <motion.section 
+                  key="form-section-container"
+                  initial={isMobile ? { opacity: 0, scale: 0.98, y: 12 } : { opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={isMobile ? { opacity: 0, scale: 0.98, y: -12, transition: { duration: 0.18 } } : undefined}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  className={`lg:col-span-4 ${aiExpanded ? 'lg:col-span-4' : 'lg:col-span-5'} no-print`}
+                >
+                  <PrescriptionForm
+                    prescription={prescription}
+                    setPrescription={setPrescription}
+                    settings={settings}
+                    setSettings={setSettings}
+                    onPrint={handlePrint}
+                    themeColors={activeTheme}
+                  />
+                </motion.section>
+              )}
+
+              {(!isMobile || mobileMode === 'view') && (
+                <motion.section 
+                  key="preview-section-container"
+                  id="prescription-rendered-section"
+                  initial={isMobile ? { opacity: 0, scale: 0.98, y: 12 } : { opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={isMobile ? { opacity: 0, scale: 0.98, y: -12, transition: { duration: 0.18 } } : undefined}
+                  transition={{ duration: 0.3, ease: 'easeOut', delay: isMobile ? 0 : 0.05 }}
+                  className={`${aiExpanded ? 'lg:col-span-5' : 'lg:col-span-7'} flex justify-center items-start lg:sticky lg:top-6 overflow-y-auto w-full`}
+                >
+                  <div className="w-full max-w-[210mm] border border-slate-300 shadow-2xl rounded-2xl overflow-hidden bg-white print:border-none print:shadow-none print:rounded-none">
+                    
+                    {/* Screen Helper banner with interactive controls */}
+                    <div className="flex items-center justify-between px-4 py-2 bg-slate-100 border-b border-b-slate-200 text-[11px] font-medium no-print select-none transition-colors text-slate-500">
+                      <span className="flex items-center gap-1.5 font-sans">
+                        <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                        <span>ISO A4 Letterhead Preview</span>
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span>210mm × 297mm Portrait</span>
+                      </div>
+                    </div>
+
+                    {/* The printable prescription target */}
+                    <PrescriptionPreview
+                      prescription={prescription}
+                      settings={settings}
+                      doctorProfile={doctorProfile}
+                      themeColors={activeTheme}
+                    />
+                  </div>
+                </motion.section>
+              )}
+
+              {(!isMobile || mobileMode === 'chat') && (aiExpanded || isMobile) && (
+                <motion.section 
+                  key="chat-section-container"
+                  initial={isMobile ? { opacity: 0, scale: 0.98, y: 12 } : { opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+                  exit={isMobile ? { opacity: 0, scale: 0.98, y: -12, transition: { duration: 0.18 } } : { opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  className={`lg:col-span-3 bg-white border border-slate-200 rounded-2xl shadow-lg lg:sticky lg:top-6 flex flex-col h-[calc(100vh-120px)] overflow-hidden no-print ${
+                    isMobile ? 'w-full h-[68vh]' : ''
+                  }`}
+                >
+                  
+                  {/* AI Assistant Chat Header */}
+                  <div className="p-3 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex justify-between items-center select-none shrink-0">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 bg-white/10 rounded-lg text-indigo-400">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-black tracking-wide flex items-center gap-1">
+                          <span>Help &amp; Support Console</span>
+                        </h3>
+                        <span className="text-[9px] text-indigo-300 font-mono">Pediatric Consultation Core</span>
+                      </div>
+                    </div>
+                    {!isMobile && (
+                      <button
+                        type="button"
+                        onClick={() => setAiExpanded(false)}
+                        className="text-slate-400 hover:text-white transition-colors cursor-pointer lg:block hidden"
+                        title="Collapse Assistant Panel"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Chat Messages Frame */}
+                  <div className="flex-1 p-3 overflow-y-auto space-y-3.5 bg-slate-50/50 scrollbar-thin">
+                    {chatMessages.map((msg, i) => (
+                      <motion.div 
+                        key={i} 
+                        initial={{ opacity: 0, scale: 0.96, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ duration: 0.25, ease: 'easeOut' }}
+                        className={`flex flex-col max-w-[90%] ${
+                          msg.role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
+                        }`}
+                      >
+                        <span className="text-[9px] font-semibold text-slate-450 uppercase mb-0.5 px-1 font-mono">
+                          {msg.role === 'user' ? 'Doctor' : 'Help Desk'}
+                        </span>
+                        <div className={`p-2.5 rounded-2xl text-[11px] leading-relaxed shadow-sm whitespace-pre-line ${
+                          msg.role === 'user' 
+                            ? 'bg-blue-600 text-white rounded-br-none' 
+                            : 'bg-white border border-slate-200/80 text-slate-700 rounded-bl-none prose prose-slate max-w-none'
+                        }`}>
+                          {msg.content}
+                        </div>
+                      </motion.div>
+                    ))}
+                    
+                    {isAiTyping && (
+                      <div className="flex flex-col max-w-[90%] mr-auto items-start animate-pulse">
+                        <span className="text-[9px] font-semibold text-slate-450 uppercase mb-0.5 px-1 font-mono">Consultation Desk</span>
+                        <div className="p-2.5 rounded-2xl text-[11px] bg-slate-100 text-slate-505 border border-slate-200 rounded-bl-none flex items-center gap-1.5 font-sans font-medium">
+                          <span className="w-1.5 h-1.5 bg-indigo-505 rounded-full animate-bounce"></span>
+                          <span className="w-1.5 h-1.5 bg-indigo-505 rounded-full animate-bounce delay-100"></span>
+                          <span className="w-1.5 h-1.5 bg-indigo-505 rounded-full animate-bounce delay-200"></span>
+                          <span>Formulating support guides...</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Quick Helper prompts */}
+                  <div className="p-2 bg-slate-100 border-t border-slate-200 text-[10px] space-y-1.5 shrink-0 select-none">
+                    <span className="font-bold text-slate-400 block uppercase tracking-wider text-[8px] px-1">Quick Support Query Prompts:</span>
+                    <div className="flex flex-wrap gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSendMessage("Suggest exact PRN Paracetamol (120mg/5ml suspension) dosing range for a child of weight 12.5 kg.")}
+                        className="bg-white hover:bg-slate-50 hover:text-blue-600 border border-slate-200 rounded-lg px-2 py-1 text-slate-600 select-none cursor-pointer text-left transition-colors font-sans"
+                      >
+                        📊 12.5kg Paracetamol SOS Dosage
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSendMessage("Provide pediatric guidelines & supportive advice to type on a prescription for a 2yo child recovery from water diarrhoea.")}
+                        className="bg-white hover:bg-slate-50 hover:text-blue-600 border border-slate-200 rounded-lg px-2 py-1 text-slate-600 select-none cursor-pointer text-left transition-colors font-sans"
+                      >
+                        🍼 Diarrhoea Dietary Notes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSendMessage("What are normal HR and SpO2 ranges for a child aged 2 years old?")}
+                        className="bg-white hover:bg-slate-50 hover:text-blue-600 border border-slate-200 rounded-lg px-2 py-1 text-slate-600 select-none cursor-pointer text-left transition-colors font-sans"
+                      >
+                        💓 2Yo Vital Ranges
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Anonymous Feedback Section inside Support Tab */}
+                  <div className="p-3 border-t border-slate-100 bg-[#f8fafc] space-y-2 shrink-0 select-none">
+                    <div className="flex justify-between items-center text-[10px] font-black tracking-wider text-slate-500 uppercase">
+                      <span>📣 Clinical Feedback Mailer</span>
+                      <span className="text-[8px] font-medium tracking-normal text-slate-400 capitalize">to: coolbuddy.neel@gmail.com</span>
+                    </div>
+                    
+                    {feedbackSuccess ? (
+                      <div className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-250 p-2 rounded-lg text-center animate-pulse">
+                        {feedbackSuccess}
+                      </div>
+                    ) : (
+                      <div className="flex gap-1.5 items-center">
+                        <input
+                          type="text"
+                          value={feedbackText}
+                          onChange={(e) => setFeedbackText(e.target.value)}
+                          placeholder="Feedback message or clinical suggestions..."
+                          disabled={feedbackLoading}
+                          className="flex-1 text-[10px] bg-white border border-slate-200 rounded-lg p-1.5 focus:outline-none text-slate-800"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSendFeedback}
+                          disabled={feedbackLoading || feedbackText.trim().length < 5}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all disabled:opacity-40"
+                        >
+                          {feedbackLoading ? "Sending..." : "Submit"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Chat Input Box */}
+                  <div className="p-2 border-t border-slate-200 bg-white flex items-center gap-1.5 shrink-0">
+                    <input
+                      type="text"
+                      value={userInput}
+                      onChange={(e) => setUserInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                      placeholder="Ask Help &amp; Support Assistant..."
+                      disabled={isAiTyping}
+                      className="flex-1 text-[11px] border border-slate-200 rounded-xl p-2 focus:ring-2 focus:ring-blue-500 outline-none text-slate-800"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleSendMessage()}
+                      disabled={isAiTyping || !userInput.trim()}
+                      className="bg-blue-600 hover:bg-blue-700 hover:shadow-md text-white p-2 rounded-xl transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                </motion.section>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="growth-immunisation-workspace"
+              initial={{ opacity: 0, scale: 0.99 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.99 }}
+              transition={{ duration: 0.25 }}
+              className="w-full"
+            >
+              <GrowthImmunisationTab
+                patient={prescription.patient}
+                themeColors={activeTheme}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </main>
 
       {/* Friendly Bottom footer decoration status */}
       <footer className="py-4 text-center text-xs text-slate-400 border-t border-slate-200 mt-auto no-print select-none">
         <p className="font-semibold font-sans">
-          Pediatric Consultation Workspace designed for Dr. Neeladri Dawn.
+          Pediatric Consultation Companion designed by Dr. Neeladri.
         </p>
         <p className="text-[10px] text-slate-400 mt-0.5">
-          MBBS, MD Paediatrics (JR) • Registration Number: 93929 West Bengal Medical Council
+          Secure, Offline-Ready Pediatric Solution Stamped with Precision
         </p>
       </footer>
 
