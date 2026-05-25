@@ -102,6 +102,383 @@ export default function PrescriptionPreview({ prescription, settings, doctorProf
     }
   };
 
+  // --- LETTERHEAD HEADER LAYOUTS ---
+  const renderClassicHeader = () => (
+    <div className="flex justify-between items-start border-b-2 pb-4" style={{ borderColor: themeColors.primary }}>
+      {/* Doctor details */}
+      <div className="flex gap-3.5 items-center">
+        {renderLogo()}
+        <div className="space-y-0.5">
+          <h1 className="text-xl font-bold tracking-tight font-display" style={{ color: themeColors.primary }}>
+            {doctorProfile.name || 'Dr. Neeladri Dawn'}
+          </h1>
+          <div className="flex items-center gap-1.5 animate-fade-in">
+            <span className="bg-blue-50/80 text-blue-700 print:bg-slate-100 print:text-black text-[11px] font-semibold px-2 py-0.5 rounded-full border border-blue-100/50 font-sans">
+              {doctorProfile.speciality || 'Paediatrician & Child Specialist'}
+            </span>
+          </div>
+          
+          {doctorProfile.registrationNumber && (
+            <div className="flex items-center gap-1 mt-1 text-[11px] text-slate-500 font-mono">
+              <ShieldCheck className="w-3.5 h-3.5" style={{ color: themeColors.secondary }} />
+              <span>Regd. No: <strong className="text-slate-750 font-semibold font-sans">{doctorProfile.registrationNumber}</strong></span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Clinic address & hours */}
+      <div className="text-right space-y-1 text-xs text-slate-600 max-w-xs">
+        {doctorProfile.clinicName && (
+          <div className="flex items-center gap-1.5 justify-end">
+            <span className="font-semibold text-slate-800">{doctorProfile.clinicName}</span>
+            <MapPin className="w-3.5 h-3.5 text-slate-400" />
+          </div>
+        )}
+        
+        {doctorProfile.clinicAddress && (
+          <p className="text-slate-500 leading-relaxed text-[11px]">
+            {doctorProfile.clinicAddress}
+          </p>
+        )}
+        
+        {doctorProfile.clinicTimings && (
+          <div className="flex items-center gap-1.5 justify-end text-[11px] text-slate-500">
+            <span>{doctorProfile.clinicTimings}</span>
+            <Clock className="w-3.5 h-3.5 text-slate-400" />
+          </div>
+        )}
+
+        {doctorProfile.clinicPhone && (
+          <div className="flex items-center gap-1.5 justify-end text-[11px] font-mono text-slate-500">
+            <span>{doctorProfile.clinicPhone}</span>
+            <Phone className="w-3.5 h-3.5 text-slate-400" />
+          </div>
+        )}
+        
+        {doctorProfile.email && (
+          <div className="flex items-center gap-1.5 justify-end text-[11px] text-slate-500">
+            <span>{doctorProfile.email}</span>
+            <Mail className="w-3.5 h-3.5 text-slate-400" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderMinimalistHeader = () => (
+    <div className="pb-3.5 border-b" style={{ borderColor: themeColors.border }}>
+      <div className="flex justify-between items-end">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <div className="scale-75 origin-left -my-1 pr-1">{renderLogo()}</div>
+            <h1 className="text-xl font-medium tracking-tight text-slate-800">
+              {doctorProfile.name || 'Dr. Neeladri Dawn'}
+            </h1>
+          </div>
+          <p className="text-xs text-slate-500 font-medium tracking-wide">
+            {doctorProfile.speciality || 'Paediatrician & Child Specialist'}
+            {doctorProfile.registrationNumber && `  |  Regd. No: ${doctorProfile.registrationNumber}`}
+          </p>
+        </div>
+        <div className="text-right text-[11px] text-slate-400 max-w-sm space-y-0.5 leading-tight">
+          {doctorProfile.clinicName && <div className="font-semibold text-slate-600">{doctorProfile.clinicName}</div>}
+          <div className="flex flex-wrap justify-end gap-x-2 gap-y-0.5">
+            {doctorProfile.clinicAddress && <span>{doctorProfile.clinicAddress}</span>}
+            {doctorProfile.clinicPhone && <span>• {doctorProfile.clinicPhone}</span>}
+            {doctorProfile.email && <span>• {doctorProfile.email}</span>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderCenteredBadgeHeader = () => (
+    <div className="text-center pt-2 pb-4 border-b border-dashed" style={{ borderColor: themeColors.border }}>
+      <div className="flex justify-center mb-2.5">
+        <div className="p-2.5 bg-slate-50 rounded-full border shadow-sm" style={{ borderColor: themeColors.border, backgroundColor: themeColors.subtle }}>
+          {renderLogo()}
+        </div>
+      </div>
+      <h1 className="text-2xl font-black tracking-tight" style={{ color: themeColors.primary }}>
+        {doctorProfile.name || 'Dr. Neeladri Dawn'}
+      </h1>
+      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mt-1.5 shadow-sm" style={{ backgroundColor: themeColors.primary, color: '#ffffff' }}>
+        <span>{doctorProfile.speciality || 'Paediatrician & Child Specialist'}</span>
+      </div>
+      {doctorProfile.registrationNumber && (
+        <div className="text-[11px] text-slate-500 font-mono mt-1">
+          National medical council ID: <span className="font-bold underline" style={{ color: themeColors.secondary }}>{doctorProfile.registrationNumber}</span>
+        </div>
+      )}
+      <div className="mt-3 text-xs text-slate-500 max-w-2xl mx-auto flex flex-wrap justify-center items-center gap-x-3 gap-y-1 bg-slate-50/50 p-2 rounded-xl border border-dotted" style={{ borderColor: themeColors.border }}>
+        {doctorProfile.clinicName && <span className="font-bold text-slate-700">{doctorProfile.clinicName}</span>}
+        {doctorProfile.clinicAddress && <span>• {doctorProfile.clinicAddress}</span>}
+        {doctorProfile.clinicTimings && <span>• {doctorProfile.clinicTimings}</span>}
+        {doctorProfile.clinicPhone && <span className="font-mono">• {doctorProfile.clinicPhone}</span>}
+      </div>
+    </div>
+  );
+
+  const renderEditorialHeader = () => (
+    <div className="border-4 p-4 border-double" style={{ borderColor: themeColors.primary }}>
+      <div className="flex flex-col md:flex-row justify-between items-center text-center md:text-left gap-4">
+        <div className="font-serif">
+          <h1 className="text-2xl font-bold tracking-wide" style={{ color: themeColors.primary }}>
+            {doctorProfile.name || 'Dr. Neeladri Dawn'}
+          </h1>
+          <p className="text-xs italic text-slate-600 font-medium mt-0.5">
+            {doctorProfile.speciality || 'Paediatrician & Child Specialist'}
+          </p>
+          {doctorProfile.registrationNumber && (
+            <p className="text-[10px] text-slate-400 font-mono mt-1 uppercase tracking-wider">
+              Registration No: {doctorProfile.registrationNumber}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col items-center">
+          {renderLogo()}
+        </div>
+        <div className="text-right text-xs text-slate-600 space-y-1 font-serif max-w-xs md:border-l md:pl-4" style={{ borderColor: themeColors.border }}>
+          {doctorProfile.clinicName && <p className="font-bold text-slate-800">{doctorProfile.clinicName}</p>}
+          {doctorProfile.clinicAddress && <p className="text-[11px] leading-tight">{doctorProfile.clinicAddress}</p>}
+          <div className="text-[11px] text-slate-500 space-y-1 italic mt-1.5 flex flex-col items-end">
+            {doctorProfile.clinicTimings && <p>{doctorProfile.clinicTimings}</p>}
+            {doctorProfile.clinicPhone && <p className="font-mono">{doctorProfile.clinicPhone}</p>}
+            {doctorProfile.email && <p>{doctorProfile.email}</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderSidebarHeader = () => (
+    <div className="grid grid-cols-12 gap-4 pb-4 border-b-2 animate-fade-in" style={{ borderColor: themeColors.primary }}>
+      <div className="col-span-4 border-r-2 pr-3 flex flex-col justify-center gap-1.5" style={{ borderColor: themeColors.primary }}>
+        <div className="flex items-center gap-1.5">
+          <div className="scale-75 origin-left -my-3">{renderLogo()}</div>
+          <h1 className="text-lg font-black tracking-tight leading-tight" style={{ color: themeColors.primary }}>
+            {doctorProfile.name || 'Dr. Neeladri Dawn'}
+          </h1>
+        </div>
+        <p className="text-[10px] leading-tight font-bold text-slate-600">
+          {doctorProfile.speciality || 'Paediatrician & Child Specialist'}
+        </p>
+        {doctorProfile.registrationNumber && (
+          <div className="text-[9px] text-slate-400 font-mono mt-1">
+            Regd: {doctorProfile.registrationNumber}
+          </div>
+        )}
+      </div>
+
+      <div className="col-span-8 flex flex-col justify-center text-left pl-2.5 space-y-1 text-slate-600">
+        {doctorProfile.clinicName && (
+          <div className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: themeColors.secondary }}></span>
+            <span>{doctorProfile.clinicName}</span>
+          </div>
+        )}
+        {doctorProfile.clinicAddress && (
+          <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+            {doctorProfile.clinicAddress}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1 text-[10px] font-mono text-slate-400">
+          {doctorProfile.clinicTimings && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3 text-slate-450" /> {doctorProfile.clinicTimings}
+            </span>
+          )}
+          {doctorProfile.clinicPhone && (
+            <span className="flex items-center gap-1">
+              <Phone className="w-3 h-3 text-slate-450" /> {doctorProfile.clinicPhone}
+            </span>
+          )}
+          {doctorProfile.email && (
+            <span className="flex items-center gap-1">
+              <Mail className="w-3 h-3 text-slate-450" /> {doctorProfile.email}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderBannerHeader = () => (
+    <div className="space-y-3">
+      <div className="rounded-xl px-4 py-3 flex justify-between items-center text-white shadow-md relative overflow-hidden" style={{ backgroundColor: themeColors.primary }}>
+        <div className="space-y-0.5 z-10">
+          <h1 className="text-lg font-extrabold tracking-tight">
+            {doctorProfile.name || 'Dr. Neeladri Dawn'}
+          </h1>
+          <p className="text-[10px] font-bold tracking-wide opacity-90 font-mono">
+            {doctorProfile.speciality || 'Paediatrician & Child Specialist'}
+            {doctorProfile.registrationNumber && `  •  Regd. No: ${doctorProfile.registrationNumber}`}
+          </p>
+        </div>
+        <div className="bg-white/10 p-1.5 rounded-xl backdrop-blur-sm z-10 scale-75 origin-right">
+          {renderLogo()}
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-3 text-[10.5px] text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-dashed" style={{ borderColor: themeColors.border }}>
+        {doctorProfile.clinicName && (
+          <div className="col-span-1 border-r pr-2 leading-tight" style={{ borderColor: themeColors.border }}>
+            <span className="font-extrabold text-slate-800 block text-[9.5px]">FACILITY STATION</span>
+            <span>{doctorProfile.clinicName}</span>
+          </div>
+        )}
+        {doctorProfile.clinicAddress && (
+          <div className="col-span-1 border-r px-2 leading-tight" style={{ borderColor: themeColors.border }}>
+            <span className="font-extrabold text-slate-800 block text-[9.5px]">LOCATION DETAILS</span>
+            <span>{doctorProfile.clinicAddress}</span>
+          </div>
+        )}
+        <div className="col-span-1 pl-2 leading-tight">
+          <span className="font-extrabold text-slate-800 block text-[9.5px]">TIMINGS & REACH</span>
+          <span>{doctorProfile.clinicTimings || 'Regular Hours'}</span>
+          {doctorProfile.clinicPhone && <span className="block font-mono text-[9px] mt-0.5 text-slate-400 font-bold">{doctorProfile.clinicPhone}</span>}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAcademicHeader = () => (
+    <div className="border-b-4 pb-4" style={{ borderColor: themeColors.primary }}>
+      <div className="flex justify-between items-center mb-3">
+        <div className="w-1/3 text-left space-y-0.5">
+          <h1 className="text-[9px] font-extrabold tracking-wider text-slate-400 uppercase font-mono leading-none">Consultant Practitioner</h1>
+          <h2 className="text-base font-bold text-slate-800 tracking-tight leading-snug">{doctorProfile.name || 'Dr. Neeladri Dawn'}</h2>
+          <p className="text-[10px] font-semibold text-slate-500 leading-none">{doctorProfile.speciality || 'Paediatrician'}</p>
+        </div>
+        <div className="w-1/3 flex justify-center">
+          <div className="p-1.5 border-2 rounded-full inline-block bg-white shadow-sm scale-90" style={{ borderColor: themeColors.primary }}>
+            {renderLogo()}
+          </div>
+        </div>
+        <div className="w-1/3 text-right">
+          <span className="inline-block text-[9.5px] bg-slate-50 border px-1.5 py-0.5 rounded font-mono text-slate-500" style={{ borderColor: themeColors.border }}>
+            Council ID: {doctorProfile.registrationNumber || 'N/A'}
+          </span>
+          {doctorProfile.clinicName && <p className="font-bold text-slate-700 text-xs mt-1.5">{doctorProfile.clinicName}</p>}
+        </div>
+      </div>
+      <div className="text-center text-[10.5px] text-slate-450 space-x-3 font-medium">
+        {doctorProfile.clinicAddress && <span>{doctorProfile.clinicAddress}</span>}
+        {doctorProfile.clinicPhone && <span className="font-mono">| Tel: {doctorProfile.clinicPhone}</span>}
+        {doctorProfile.email && <span>| Email: {doctorProfile.email}</span>}
+      </div>
+    </div>
+  );
+
+  const renderAsymmetricHeader = () => (
+    <div className="grid grid-cols-12 gap-3.5 items-end pb-3.5 border-b" style={{ borderColor: themeColors.border }}>
+      <div className="col-span-7 bg-slate-50 rounded-2xl p-3.5 border shadow-inner relative overflow-hidden" style={{ borderColor: themeColors.border, backgroundColor: themeColors.subtle }}>
+        <div className="absolute right-2 bottom-1 opacity-10 scale-125 origin-bottom-right pointer-events-none">
+          {renderLogo()}
+        </div>
+        <span className="text-[8.5px] font-extrabold px-1.5 py-0.2 bg-white text-slate-500 rounded shadow-sm border font-mono tracking-wider uppercase leading-none">
+          Medical Division Specialist
+        </span>
+        <h1 className="text-lg font-black mt-1.5 leading-tight" style={{ color: themeColors.primary }}>
+          {doctorProfile.name || 'Dr. Neeladri Dawn'}
+        </h1>
+        <p className="text-[11px] font-semibold text-slate-600 mt-0.5">{doctorProfile.speciality || 'Pediatric Consultant'}</p>
+        {doctorProfile.registrationNumber && (
+          <p className="text-[9.5px] text-slate-400 font-mono mt-1.5">Official License: {doctorProfile.registrationNumber}</p>
+        )}
+      </div>
+      <div className="col-span-5 text-right space-y-1 p-1 text-slate-500 text-[10.5px] leading-snug">
+        {doctorProfile.clinicName && <p className="text-xs font-bold text-slate-800 leading-tight">{doctorProfile.clinicName}</p>}
+        {doctorProfile.clinicAddress && <p className="leading-tight text-slate-450">{doctorProfile.clinicAddress}</p>}
+        <div className="space-y-0.5 font-mono text-[9.5px] text-slate-450">
+          {doctorProfile.clinicTimings && <p>Timings: {doctorProfile.clinicTimings}</p>}
+          {doctorProfile.clinicPhone && <p className="font-bold shrink-0" style={{ color: themeColors.secondary }}>Tel: {doctorProfile.clinicPhone}</p>}
+          {doctorProfile.email && <p className="truncate">{doctorProfile.email}</p>}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderDualCardHeader = () => (
+    <div className="grid grid-cols-2 gap-3 pb-2">
+      {/* Clinician Card */}
+      <div className="border rounded-xl p-2.5 bg-slate-50/40 shadow-sm flex gap-2.5 items-center" style={{ borderColor: themeColors.border }}>
+        <div className="scale-75 origin-left -mr-4 shrink-0">{renderLogo()}</div>
+        <div className="space-y-0.5 flex-1 min-w-0">
+          <span className="text-[7.5px] tracking-wider uppercase font-extrabold text-slate-400 font-mono leading-none block">Specialist Physician</span>
+          <h1 className="text-sm font-black text-slate-800 truncate">{doctorProfile.name || 'Dr. Neeladri Dawn'}</h1>
+          <p className="text-[10px] font-medium text-slate-500 truncate">{doctorProfile.speciality || 'Pediatric Division'}</p>
+          {doctorProfile.registrationNumber && (
+            <span className="inline-block text-[8.5px] font-mono bg-slate-100 text-slate-500 rounded px-1">{doctorProfile.registrationNumber}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Facility Card */}
+      <div className="border rounded-xl p-2.5 bg-slate-50/40 shadow-sm flex flex-col justify-between min-w-0" style={{ borderColor: themeColors.border }}>
+        <div>
+          <div className="flex items-center gap-1 text-slate-700">
+            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+            <span className="text-[11px] font-black truncate">{doctorProfile.clinicName || 'Medical Facility'}</span>
+          </div>
+          {doctorProfile.clinicAddress && (
+            <p className="text-[9.5px] text-slate-500 pl-4 truncate leading-tight mt-0.5">{doctorProfile.clinicAddress}</p>
+          )}
+        </div>
+        <div className="flex justify-between items-center pl-4 text-[9px] font-mono text-slate-400 mt-1">
+          <span className="truncate">{doctorProfile.clinicPhone || 'N/A'}</span>
+          <span className="truncate pl-1">{doctorProfile.clinicTimings || 'Regular Hours'}</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderInlineCompactHeader = () => (
+    <div className="border-b pb-1.5 flex flex-col gap-1 text-[11px] text-slate-500" style={{ borderColor: themeColors.border }}>
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-1.5">
+          <div className="scale-50 origin-left -my-4 pr-1 shrink-0">{renderLogo()}</div>
+          <span className="font-extrabold text-sm text-slate-800 tracking-tight leading-none">{doctorProfile.name || 'Dr. Neeladri Dawn'}</span>
+          <span className="bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded-md font-bold text-[9.5px] leading-none shrink-0">{doctorProfile.speciality || 'Paediatrics'}</span>
+          {doctorProfile.registrationNumber && <span className="font-mono text-slate-400 text-[9px] shrink-0">(No: {doctorProfile.registrationNumber})</span>}
+        </div>
+        <div className="font-extrabold text-slate-800 text-[10.5px]">
+          {doctorProfile.clinicName || 'Clinic'}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-1 text-[9px] font-mono leading-none border-t border-slate-100 pt-1">
+        <span className="truncate max-w-[280px]">📍 {doctorProfile.clinicAddress || 'Address'}</span>
+        <div className="flex gap-2 shrink-0">
+          {doctorProfile.clinicPhone && <span>📞 {doctorProfile.clinicPhone}</span>}
+          {doctorProfile.email && <span className="hidden sm:inline">✉️ {doctorProfile.email}</span>}
+          {doctorProfile.clinicTimings && <span className="hidden sm:inline">🕒 {doctorProfile.clinicTimings}</span>}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderBottomContactHeader = () => (
+    <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: themeColors.border }}>
+      <div className="flex gap-3 items-center">
+        {renderLogo()}
+        <div className="space-y-0.5">
+          <h1 className="text-xl font-extrabold tracking-tight" style={{ color: themeColors.primary }}>
+            {doctorProfile.name || 'Dr. Neeladri Dawn'}
+          </h1>
+          <p className="text-xs text-slate-600 font-semibold">{doctorProfile.speciality || 'Paediatrician & Child Specialist'}</p>
+          {doctorProfile.registrationNumber && (
+            <div className="text-[10px] text-slate-400 font-mono">Reg. License: {doctorProfile.registrationNumber}</div>
+          )}
+        </div>
+      </div>
+      <div className="text-right shrink-0">
+        <span className="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded border border-emerald-200 uppercase tracking-widest block font-mono">
+          Interactive Rx Template
+        </span>
+      </div>
+    </div>
+  );
+
   // Convert English times to clean clinical labels (Frequency markers)
   const renderFrequencyMarker = (freq: string) => {
     const f = freq.toLowerCase();
@@ -200,66 +577,33 @@ export default function PrescriptionPreview({ prescription, settings, doctorProf
       {/* Main Prescription content blocks */}
       <div className="space-y-4">
         {/* ================= HEADER SECTION ================= */}
-        <div className="flex justify-between items-start border-b-2 pb-4" style={{ borderColor: themeColors.primary }}>
-          {/* Doctor details */}
-          <div className="flex gap-3.5 items-center">
-            {renderLogo()}
-            <div className="space-y-0.5">
-              <h1 className="text-xl font-bold tracking-tight font-display" style={{ color: themeColors.primary }}>
-                {doctorProfile.name || 'Dr. Neeladri Dawn'}
-              </h1>
-              <div className="flex items-center gap-1.5 animate-fade-in">
-                <span className="bg-blue-50/80 text-blue-700 print:bg-slate-100 print:text-black text-[11px] font-semibold px-2 py-0.5 rounded-full border border-blue-100/50 font-sans">
-                  {doctorProfile.speciality || 'Paediatrician & Child Specialist'}
-                </span>
-              </div>
-              
-              {doctorProfile.registrationNumber && (
-                <div className="flex items-center gap-1 mt-1 text-[11px] text-slate-500 font-mono">
-                  <ShieldCheck className="w-3.5 h-3.5" style={{ color: themeColors.secondary }} />
-                  <span>Regd. No: <strong className="text-slate-750 font-semibold font-sans">{doctorProfile.registrationNumber}</strong></span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Clinic address & hours */}
-          <div className="text-right space-y-1 text-xs text-slate-600 max-w-xs">
-            {doctorProfile.clinicName && (
-              <div className="flex items-center gap-1.5 justify-end">
-                <span className="font-semibold text-slate-800">{doctorProfile.clinicName}</span>
-                <MapPin className="w-3.5 h-3.5 text-slate-400" />
-              </div>
-            )}
-            
-            {doctorProfile.clinicAddress && (
-              <p className="text-slate-500 leading-relaxed text-[11px]">
-                {doctorProfile.clinicAddress}
-              </p>
-            )}
-            
-            {doctorProfile.clinicTimings && (
-              <div className="flex items-center gap-1.5 justify-end text-[11px] text-slate-500">
-                <span>{doctorProfile.clinicTimings}</span>
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-              </div>
-            )}
-
-            {doctorProfile.clinicPhone && (
-              <div className="flex items-center gap-1.5 justify-end text-[11px] font-mono text-slate-500">
-                <span>{doctorProfile.clinicPhone}</span>
-                <Phone className="w-3.5 h-3.5 text-slate-400" />
-              </div>
-            )}
-            
-            {doctorProfile.email && (
-              <div className="flex items-center gap-1.5 justify-end text-[11px] text-slate-500">
-                <span>{doctorProfile.email}</span>
-                <Mail className="w-3.5 h-3.5 text-slate-400" />
-              </div>
-            )}
-          </div>
-        </div>
+        {(() => {
+          switch (settings.headerStyle || 'classic') {
+            case 'minimalist':
+              return renderMinimalistHeader();
+            case 'centered-badge':
+              return renderCenteredBadgeHeader();
+            case 'editorial':
+              return renderEditorialHeader();
+            case 'sidebar':
+              return renderSidebarHeader();
+            case 'banner':
+              return renderBannerHeader();
+            case 'academic':
+              return renderAcademicHeader();
+            case 'asymmetric-bold':
+              return renderAsymmetricHeader();
+            case 'dual-card':
+              return renderDualCardHeader();
+            case 'inline-compact':
+              return renderInlineCompactHeader();
+            case 'bottom-contact':
+              return renderBottomContactHeader();
+            case 'classic':
+            default:
+              return renderClassicHeader();
+          }
+        })()}
 
         {/* ================= PATIENT DETAILS STRIP ================= */}
         <div 
@@ -569,6 +913,30 @@ export default function PrescriptionPreview({ prescription, settings, doctorProf
             </div>
           </div>
         </div>
+
+        {/* If bottom-contact layout, render the clinic coordinates here in the footer */}
+        {settings.headerStyle === 'bottom-contact' && (
+          <div className="border-t border-t-2 pt-2.5 mt-2 grid grid-cols-3 gap-4 text-[10.5px] text-slate-500 leading-tight bg-slate-50/50 p-2.5 rounded-xl border" style={{ borderColor: themeColors.border }}>
+            {doctorProfile.clinicName && (
+              <div>
+                <span className="font-extrabold text-slate-800 block text-[9px] uppercase tracking-wider">Facility Hub</span>
+                <span>{doctorProfile.clinicName}</span>
+              </div>
+            )}
+            {doctorProfile.clinicAddress && (
+              <div>
+                <span className="font-extrabold text-slate-800 block text-[9px] uppercase tracking-wider">CLINIC LOCATION</span>
+                <span>{doctorProfile.clinicAddress}</span>
+              </div>
+            )}
+            <div className="space-y-0.5">
+              <span className="font-extrabold text-slate-800 block text-[9px] uppercase tracking-wider">TIMINGS & CONTACTS</span>
+              {doctorProfile.clinicTimings && <p>🕒 {doctorProfile.clinicTimings}</p>}
+              {doctorProfile.clinicPhone && <p className="font-mono">📞 {doctorProfile.clinicPhone}</p>}
+              {doctorProfile.email && <p className="truncate">✉️ {doctorProfile.email}</p>}
+            </div>
+          </div>
+        )}
 
         {/* Bottom micro branding & credits */}
         <div className="flex justify-between items-center text-[9px] text-slate-400 border-t border-slate-100 pt-2 font-mono">

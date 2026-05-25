@@ -41,6 +41,7 @@ export interface LetterheadSettings {
   signatureMode: 'text' | 'draw' | 'none';
   signatureText: string;
   signatureDrawData: string; // base64 canvas line data
+  headerStyle?: string; // Styled letterhead layout templates
 }
 
 export interface Prescription {

@@ -251,7 +251,8 @@ const DEFAULT_SETTINGS: LetterheadSettings = {
   nextFollowUp: 'After 3 days, or SOS',
   signatureMode: 'text',
   signatureText: 'Dr. Neeladri Dawn',
-  signatureDrawData: ''
+  signatureDrawData: '',
+  headerStyle: 'classic'
 };
 
 export default function App() {
