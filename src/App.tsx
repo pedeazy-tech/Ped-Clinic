@@ -11,34 +11,146 @@ import {
   ChevronRight, TrendingUp
 } from 'lucide-react';
 
-const THEME_MAPPING = {
+const THEME_MAPPING: Record<string, { primary: string; secondary: string; subtle: string; border: string; text: string }> = {
   royal: {
-    primary: '#1d4ed8', // Royal indigo blue
-    secondary: '#3b82f6',
-    subtle: '#eff6ff',
-    border: '#bfdbfe',
-    text: '#1e3a8a'
-  },
-  teal: {
-    primary: '#0f766e', // Pediatric warm teal
+    primary: '#0f766e', // Classic Medical Teal
     secondary: '#0d9488',
     subtle: '#f0fdfa',
     border: '#99f6e4',
     text: '#115e59'
   },
+  teal: {
+    primary: '#0d9488', // Minty Pediatric Teal
+    secondary: '#14b8a6',
+    subtle: '#f0fdfa',
+    border: '#ccfbf1',
+    text: '#0f766e'
+  },
   indigo: {
-    primary: '#4338ca', // Deep academic blue
-    secondary: '#6366f1',
-    subtle: '#f5f3ff',
-    border: '#c7d2fe',
-    text: '#312e81'
+    primary: '#047857', // Sage / Spruce Forest Teal
+    secondary: '#059669',
+    subtle: '#f0fdf4',
+    border: '#bbf7d0',
+    text: '#064e3b'
   },
   deepsea: {
-    primary: '#0369a1', // Bright coastal pediatric blue
+    primary: '#0891b2', // Turquoise Oceanic Teal
+    secondary: '#06b6d4',
+    subtle: '#ecfeff',
+    border: '#a5f3fc',
+    text: '#0e7490'
+  },
+  sky: {
+    primary: '#0284c7', // Breezy Sky Blue
     secondary: '#0ea5e9',
     subtle: '#f0f9ff',
     border: '#bae6fd',
-    text: '#0c4a6e'
+    text: '#0369a1'
+  },
+  cobalt: {
+    primary: '#1d4ed8', // Cobalt Academic Blue
+    secondary: '#3b82f6',
+    subtle: '#eff6ff',
+    border: '#bfdbfe',
+    text: '#1e3a8a'
+  },
+  navy: {
+    primary: '#1e3a8a', // Deep Navy Blue
+    secondary: '#2563eb',
+    subtle: '#f0f5ff',
+    border: '#dbeafe',
+    text: '#111827'
+  },
+  grape: {
+    primary: '#6d28d9', // Lavender Grape
+    secondary: '#8b5cf6',
+    subtle: '#f5f3ff',
+    border: '#ddd6fe',
+    text: '#4c1d95'
+  },
+  orchid: {
+    primary: '#a21caf', // Fuchsia Orchid
+    secondary: '#d946ef',
+    subtle: '#fdf4ff',
+    border: '#f5d0fe',
+    text: '#701a75'
+  },
+  rose: {
+    primary: '#be123c', // Rosy Blossom Pink
+    secondary: '#f43f5e',
+    subtle: '#fff1f2',
+    border: '#fecdd3',
+    text: '#881337'
+  },
+  coral: {
+    primary: '#e11d48', // Coral Red
+    secondary: '#fb7185',
+    subtle: '#fff1f2',
+    border: '#ffe4e6',
+    text: '#9f1239'
+  },
+  terracotta: {
+    primary: '#c2410c', // Warm Terracotta Orange
+    secondary: '#f97316',
+    subtle: '#fff7ed',
+    border: '#ffedd5',
+    text: '#7c2d12'
+  },
+  amber: {
+    primary: '#b45309', // Amber Honey Gold
+    secondary: '#f59e0b',
+    subtle: '#fffbeb',
+    border: '#fef3c7',
+    text: '#78350f'
+  },
+  yellow: {
+    primary: '#854d0e', // Olive Yellow
+    secondary: '#eab308',
+    subtle: '#fefce8',
+    border: '#fef9c3',
+    text: '#713f12'
+  },
+  lime: {
+    primary: '#4d7c0f', // Therapeutic Lime Green
+    secondary: '#84cc16',
+    subtle: '#f7fee7',
+    border: '#ecfccb',
+    text: '#3f6212'
+  },
+  forest: {
+    primary: '#15803d', // Deep Jungle Forest
+    secondary: '#22c55e',
+    subtle: '#f0fdf4',
+    border: '#dcfce7',
+    text: '#14532d'
+  },
+  emerald: {
+    primary: '#047857', // Spirited Emerald Green
+    secondary: '#10b981',
+    subtle: '#ecfdf5',
+    border: '#d1fae5',
+    text: '#064e3b'
+  },
+  slate: {
+    primary: '#475569', // Professional Charcoal Slate
+    secondary: '#64748b',
+    subtle: '#f8fafc',
+    border: '#e2e8f0',
+    text: '#1e293b'
+  },
+  bronze: {
+    primary: '#78350f', // Cozy Antique Bronze
+    secondary: '#92400e',
+    subtle: '#fffbeb',
+    border: '#fef3c7',
+    text: '#451a03'
+  },
+  plum: {
+    primary: '#831843', // Autumn Plum Magenta
+    secondary: '#db2777',
+    subtle: '#fdf2f8',
+    border: '#fce7f3',
+    text: '#500724'
   }
 };
 
@@ -126,7 +238,7 @@ const DEFAULT_PRESCRIPTION: Prescription = {
 };
 
 const DEFAULT_SETTINGS: LetterheadSettings = {
-  themeColor: 'royal',
+  themeColor: 'teal',
   watermark: 'bear',
   showVitals: true,
   showClinicalFeed: true,
@@ -214,45 +326,7 @@ How can I assist your consultation session today?`
   const [userInput, setUserInput] = useState('');
   const [isAiTyping, setIsAiTyping] = useState(false);
 
-  // AI Assistant anonymous feedback form state
-  const [feedbackText, setFeedbackText] = useState('');
-  const [feedbackSuccess, setFeedbackSuccess] = useState('');
-  const [feedbackLoading, setFeedbackLoading] = useState(false);
 
-  const handleSendFeedback = async () => {
-    if (!feedbackText.trim() || feedbackText.trim().length < 5) {
-      alert("Feedback message must be at least 5 characters long.");
-      return;
-    }
-    const messageContent = feedbackText.trim();
-    try {
-      setFeedbackLoading(true);
-      // Attempt backend capture first for logging/compliance
-      const res = await fetch("/api/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: messageContent })
-      });
-      
-      // Complete redirect according to user request
-      setFeedbackSuccess("Redirecting to coolbuddy.neel@gmail.com...");
-      setFeedbackText('');
-      
-      // Perform direct location redirect using standard mailto scheme
-      window.location.href = `mailto:coolbuddy.neel@gmail.com?subject=Pediatric%20Prescription%20App%20Feedback&body=${encodeURIComponent(messageContent)}`;
-      
-      setTimeout(() => setFeedbackSuccess(''), 4500);
-    } catch (err) {
-      console.error("Feedback error:", err);
-      // Fallback redirect directly
-      window.location.href = `mailto:coolbuddy.neel@gmail.com?subject=Pediatric%20Prescription%20App%20Feedback&body=${encodeURIComponent(messageContent)}`;
-      setFeedbackSuccess("Redirected to coolbuddy.neel@gmail.com!");
-      setFeedbackText('');
-      setTimeout(() => setFeedbackSuccess(''), 4500);
-    } finally {
-      setFeedbackLoading(false);
-    }
-  };
 
   const [mobileMode, setMobileMode] = useState<'edit' | 'view' | 'growth' | 'chat'>('edit');
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'prescription' | 'growth'>('prescription');
@@ -380,11 +454,11 @@ How can I assist your consultation session today?`
               </div>
               <div>
                 <span className="text-xs uppercase font-extrabold tracking-widest text-blue-100">designed by Dr. Neeladri</span>
-                <h1 className="text-2xl font-black tracking-tight font-display">PediScript Lite</h1>
+                <h1 className="text-2xl font-black tracking-tight font-display">PediScript- Your Own Clinic Companion</h1>
               </div>
             </div>
             <p className="text-blue-100/90 text-xs mt-3.5 leading-relaxed max-w-lg font-medium">
-              A high-fidelity consultation platform optimized for child specialists. Enter your professional clinic parameters first to enter the system.
+              A high-fidelity consultation platform optimized for child specialists. Enter your professional clinic parameters first to proceed.
             </p>
           </div>
 
@@ -393,7 +467,7 @@ How can I assist your consultation session today?`
             <form onSubmit={handleCustomSetupLogin} className="space-y-4">
               <div className="flex items-center gap-2 border-b-2 pb-1 border-slate-100">
                 <UserCheck className="w-4 h-4 text-slate-500" />
-                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Enter Custom Doctor Credentials</h2>
+                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Enter Doctor Credentials</h2>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -452,10 +526,9 @@ How can I assist your consultation session today?`
 
                 {/* Clinic Name */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase">Clinic / Chambers Name</label>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Clinic / Chambers Name <span className="text-[9px] text-slate-400 font-normal">(Optional)</span></label>
                   <input
                     type="text"
-                    required
                     value={setupClinicName}
                     onChange={(e) => setSetupClinicName(e.target.value)}
                     placeholder="e.g. Calcutta Consultation Clinic"
@@ -465,10 +538,9 @@ How can I assist your consultation session today?`
 
                 {/* Timings */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase">Working Hours / Timings</label>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Working Hours / Timings <span className="text-[9px] text-slate-400 font-normal">(Optional)</span></label>
                   <input
                     type="text"
-                    required
                     value={setupClinicTimings}
                     onChange={(e) => setSetupClinicTimings(e.target.value)}
                     placeholder="e.g. Mon-Sat 9AM to 4PM"
@@ -491,10 +563,9 @@ How can I assist your consultation session today?`
 
                 {/* Address */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase">Clinic Address</label>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Clinic Address <span className="text-[9px] text-slate-400 font-normal">(Optional)</span></label>
                   <input
                     type="text"
-                    required
                     value={setupClinicAddress}
                     onChange={(e) => setSetupClinicAddress(e.target.value)}
                     placeholder="e.g. Kolkata, WB"
@@ -543,7 +614,8 @@ How can I assist your consultation session today?`
                 )}
               </div>
               <p className="text-xs font-medium text-slate-500">
-                {doctorProfile.clinicName || 'Pediatric Clinic Workspace'} • {doctorProfile.clinicTimings}
+                {doctorProfile.clinicName || 'Pediatric Clinic'}
+                {doctorProfile.clinicTimings ? ` • ${doctorProfile.clinicTimings}` : ''}
               </p>
             </div>
           </div>
@@ -558,13 +630,18 @@ How can I assist your consultation session today?`
                 onClick={() => {
                   setActiveWorkspaceTab('prescription');
                 }}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                style={
                   activeWorkspaceTab === 'prescription'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? { backgroundColor: activeTheme.subtle, color: activeTheme.text, borderColor: activeTheme.border }
+                    : {}
+                }
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border border-transparent ${
+                  activeWorkspaceTab === 'prescription'
+                    ? 'shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-250/20'
                 }`}
               >
-                <FileText className="w-3.5 h-3.5" />
+                <FileText className="w-3.5 h-3.5" style={{ color: activeWorkspaceTab === 'prescription' ? activeTheme.primary : undefined }} />
                 <span>Prescription Workspace</span>
               </button>
               <button
@@ -572,13 +649,18 @@ How can I assist your consultation session today?`
                 onClick={() => {
                   setActiveWorkspaceTab('growth');
                 }}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                style={
                   activeWorkspaceTab === 'growth'
-                    ? 'bg-white text-indigo-600 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? { backgroundColor: activeTheme.subtle, color: activeTheme.text, borderColor: activeTheme.border }
+                    : {}
+                }
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border border-transparent ${
+                  activeWorkspaceTab === 'growth'
+                    ? 'shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-250/20'
                 }`}
               >
-                <TrendingUp className="w-3.5 h-3.5" />
+                <TrendingUp className="w-3.5 h-3.5" style={{ color: activeWorkspaceTab === 'growth' ? activeTheme.primary : undefined }} />
                 <span>Growth and NIS</span>
               </button>
             </div>
@@ -887,37 +969,22 @@ How can I assist your consultation session today?`
                     </div>
                   </div>
 
-                  {/* Anonymous Feedback Section inside Support Tab */}
+                  {/* Provide Feedback Section inside Support Tab */}
                   <div className="p-3 border-t border-slate-100 bg-[#f8fafc] space-y-2 shrink-0 select-none">
                     <div className="flex justify-between items-center text-[10px] font-black tracking-wider text-slate-500 uppercase">
-                      <span>📣 Clinical Feedback Mailer</span>
-                      <span className="text-[8px] font-medium tracking-normal text-slate-400 capitalize">to: coolbuddy.neel@gmail.com</span>
+                      <span>📣 Provide Feedback</span>
+                      <span className="text-[8px] font-medium tracking-normal text-indigo-600 capitalize">External Google Form</span>
                     </div>
-                    
-                    {feedbackSuccess ? (
-                      <div className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-250 p-2 rounded-lg text-center animate-pulse">
-                        {feedbackSuccess}
-                      </div>
-                    ) : (
-                      <div className="flex gap-1.5 items-center">
-                        <input
-                          type="text"
-                          value={feedbackText}
-                          onChange={(e) => setFeedbackText(e.target.value)}
-                          placeholder="Feedback message or clinical suggestions..."
-                          disabled={feedbackLoading}
-                          className="flex-1 text-[10px] bg-white border border-slate-200 rounded-lg p-1.5 focus:outline-none text-slate-800"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleSendFeedback}
-                          disabled={feedbackLoading || feedbackText.trim().length < 5}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all disabled:opacity-40"
-                        >
-                          {feedbackLoading ? "Sending..." : "Submit"}
-                        </button>
-                      </div>
-                    )}
+                    <a
+                      href="https://forms.gle/ttF6Hx3G8j1JwRtw5"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ backgroundColor: activeTheme.subtle, color: activeTheme.text, borderColor: activeTheme.border }}
+                      className="w-full py-2 px-3 rounded-xl border text-xs font-bold transition-all hover:opacity-95 flex items-center justify-center gap-2 cursor-pointer shadow-sm text-center transform active:scale-95"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" style={{ color: activeTheme.primary }} />
+                      <span>Provide a Feedback</span>
+                    </a>
                   </div>
 
                   {/* Chat Input Box */}
@@ -956,6 +1023,17 @@ How can I assist your consultation session today?`
               <GrowthImmunisationTab
                 patient={prescription.patient}
                 themeColors={activeTheme}
+                onResetPatientVaccineParams={() => {
+                  setPrescription(prev => ({
+                    ...prev,
+                    patient: {
+                      ...prev.patient,
+                      immunizationUpToDate: true,
+                      immunizationStatus: 'up_to_date',
+                      missingVaccines: ''
+                    }
+                  }));
+                }}
               />
             </motion.div>
           )}

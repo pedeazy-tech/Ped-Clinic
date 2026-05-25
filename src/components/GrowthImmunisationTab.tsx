@@ -16,7 +16,9 @@ import {
   Sparkles, 
   CheckSquare, 
   Square,
-  Calculator
+  Calculator,
+  XCircle,
+  RotateCcw
 } from 'lucide-react';
 
 interface GrowthCheckup {
@@ -44,10 +46,11 @@ interface GrowthImmunisationTabProps {
   themeColors: {
     primary: string;
     secondary: string;
-    accent: string;
-    light: string;
-    gradient: string;
+    subtle: string;
+    border: string;
+    text: string;
   };
+  onResetPatientVaccineParams?: () => void;
 }
 
 // WHO Child Growth Standards (simplified reference bands for 0-60 months)
@@ -203,10 +206,10 @@ const VACCINE_SCHEDULE_DATA: VaccineItem[] = [
   { id: 'v_td16', name: 'Td-16', fullName: 'Tetanus & adult Diphtheria - 16 Yr', recommendedAge: '16 Years', ageInMonthsLimit: 192, diseases: 'Lockjaw (Tetanus) and Diphtheria', notes: '0.5 ml. Intramuscular injection in upper arm.' }
 ];
 
-export default function GrowthImmunisationTab({ patient, themeColors }: GrowthImmunisationTabProps) {
+export default function GrowthImmunisationTab({ patient, themeColors, onResetPatientVaccineParams }: GrowthImmunisationTabProps) {
   const [metricMode, setMetricMode] = useState<'weight' | 'height' | 'muac' | 'head'>('weight');
   const [savedRecords, setSavedRecords] = useState<GrowthCheckup[]>([]);
-  const [immunisationState, setImmunisationState] = useState<Record<string, { status: 'given' | 'pending'; dateGiven?: string }>>({});
+  const [immunisationState, setImmunisationState] = useState<Record<string, { status: 'given' | 'pending' | 'not_taken'; dateGiven?: string }>>({});
   
   // Quick entry forms
   const [customAgeWeeksMonths, setCustomAgeWeeksMonths] = useState<string>('');
@@ -219,6 +222,10 @@ export default function GrowthImmunisationTab({ patient, themeColors }: GrowthIm
   const [bmiWeight, setBmiWeight] = useState<string>('');
   const [bmiHeight, setBmiHeight] = useState<string>('');
 
+  // Dynamic patient key for immunization cache
+  const patientKey = patient?.name ? patient.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '_') : '';
+  const immCacheKey = patientKey ? `immunisation_records_v1_${patientKey}` : 'immunisation_records_v1_anonymous';
+
   // Loaded cache
   useEffect(() => {
     const cachedRecords = localStorage.getItem('growth_records_v1');
@@ -229,16 +236,22 @@ export default function GrowthImmunisationTab({ patient, themeColors }: GrowthIm
         console.error("Failed to parse growth cache", e);
       }
     }
+  }, []);
 
-    const cachedImm = localStorage.getItem('immunisation_records_v1');
+  // Reload immunization state whenever active patient changes
+  useEffect(() => {
+    const cachedImm = localStorage.getItem(immCacheKey);
     if (cachedImm) {
       try {
         setImmunisationState(JSON.parse(cachedImm));
       } catch (e) {
         console.error("Failed to parse vaccination cache", e);
+        setImmunisationState({});
       }
+    } else {
+      setImmunisationState({});
     }
-  }, []);
+  }, [immCacheKey]);
 
   // Sync back to local storage
   const saveRecordsToCache = (updated: GrowthCheckup[]) => {
@@ -246,8 +259,8 @@ export default function GrowthImmunisationTab({ patient, themeColors }: GrowthIm
     setSavedRecords(updated);
   };
 
-  const saveImmToCache = (updated: Record<string, { status: 'given' | 'pending'; dateGiven?: string }>) => {
-    localStorage.setItem('immunisation_records_v1', JSON.stringify(updated));
+  const saveImmToCache = (updated: Record<string, { status: 'given' | 'pending' | 'not_taken'; dateGiven?: string }>) => {
+    localStorage.setItem(immCacheKey, JSON.stringify(updated));
     setImmunisationState(updated);
   };
 
@@ -313,17 +326,33 @@ export default function GrowthImmunisationTab({ patient, themeColors }: GrowthIm
     saveRecordsToCache(updated);
   };
 
-  const toggleVaccine = (vaccineId: string) => {
-    const current = immunisationState[vaccineId];
-    const updated = { ...immunisationState };
-    if (current && current.status === 'given') {
-      updated[vaccineId] = { status: 'pending' };
-    } else {
-      updated[vaccineId] = { 
-        status: 'given'
-      };
-    }
+  const setVaccineStatus = (vaccineId: string, status: 'given' | 'pending' | 'not_taken') => {
+    const updated = {
+      ...immunisationState,
+      [vaccineId]: { status }
+    };
     saveImmToCache(updated);
+  };
+
+  const toggleVaccine = (vaccineId: string) => {
+    const record = immunisationState[vaccineId];
+    const status = record?.status || 'pending';
+    let nextStatus: 'given' | 'pending' | 'not_taken';
+    if (status === 'pending') {
+      nextStatus = 'given';
+    } else if (status === 'given') {
+      nextStatus = 'not_taken';
+    } else {
+      nextStatus = 'pending';
+    }
+    setVaccineStatus(vaccineId, nextStatus);
+  };
+
+  const handleClearVaccines = () => {
+    if (window.confirm("Reset all vaccine tracker statuses for this patient?")) {
+      saveImmToCache({});
+      onResetPatientVaccineParams?.();
+    }
   };
 
   // Numerical percentiles helper array
@@ -833,13 +862,27 @@ export default function GrowthImmunisationTab({ patient, themeColors }: GrowthIm
           {/* Progress Header widget */}
           <div className="border-b border-slate-100 pb-4 mb-4">
             <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[10px] font-black tracking-widest text-[#4f46e5] uppercase bg-indigo-50 border border-indigo-120 px-2 py-0.5 rounded-full inline-block mb-1.5">
+              <div className="flex-1 mr-4">
+                <span 
+                  style={{ color: themeColors.primary, backgroundColor: themeColors.subtle, borderColor: themeColors.border }}
+                  className="text-[10px] font-black tracking-widest uppercase border px-2 py-0.5 rounded-full inline-block mb-1.5"
+                >
                   National Immunisation Schedule (India)
                 </span>
-                <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-                  <span>India UIP Vaccine Tracker</span>
-                </h3>
+                <div className="flex flex-wrap items-center justify-between gap-2.5">
+                  <h3 className="text-sm font-black text-slate-800">
+                    <span>India UIP Vaccine Tracker</span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={handleClearVaccines}
+                    style={{ color: themeColors.primary, borderColor: themeColors.border, backgroundColor: themeColors.subtle }}
+                    className="text-[10.5px] px-2.5 py-1 rounded-lg border font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95 shadow-sm hover:opacity-90"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset Vaccine Tab</span>
+                  </button>
+                </div>
               </div>
               
               {/* Progress counter pill */}
@@ -853,14 +896,15 @@ export default function GrowthImmunisationTab({ patient, themeColors }: GrowthIm
             <div className="mt-3.5">
               <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
                 <span>Progress Checklist Completion</span>
-                <span className="text-indigo-600 font-black">{vaccinePercentage}%</span>
+                <span className="font-black" style={{ color: themeColors.primary }}>{vaccinePercentage}%</span>
               </div>
               <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${vaccinePercentage}%` }}
                   transition={{ duration: 0.6, ease: 'easeOut' }}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-650 h-full rounded-full" 
+                  style={{ backgroundColor: themeColors.primary }}
+                  className="h-full rounded-full" 
                 />
               </div>
             </div>
@@ -880,7 +924,7 @@ export default function GrowthImmunisationTab({ patient, themeColors }: GrowthIm
                 <div key={ageGroup} className="space-y-2 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
                   <div className="flex items-center justify-between pl-1">
                     <span className="text-xs font-black text-[#1e1b4b] leading-tight flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: themeColors.primary }}></span>
                       <span>{ageGroup} Milestone Vaccines</span>
                     </span>
                     {patient.name && isCohortPastDue && (
@@ -893,15 +937,19 @@ export default function GrowthImmunisationTab({ patient, themeColors }: GrowthIm
                   <div className="space-y-2">
                     {cohortVaccines.map((v) => {
                       const record = immunisationState[v.id];
-                      const isCompleted = record?.status === 'given';
+                      const status = record?.status || 'pending';
+                      const isCompleted = status === 'given';
+                      const isNotTaken = status === 'not_taken';
 
                       return (
                         <div 
                           key={v.id}
                           onClick={() => toggleVaccine(v.id)}
-                          className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-left cursor-pointer select-none transition-all duration-200 ${
+                          className={`flex items-start gap-2.5 p-3 rounded-xl border text-left cursor-pointer select-none transition-all duration-200 hover:-translate-y-[1px] ${
                             isCompleted 
-                              ? 'bg-emerald-50/50 border-emerald-150 shadow-inner' 
+                              ? 'bg-emerald-50/45 border-emerald-250/60 shadow-inner' 
+                              : isNotTaken
+                              ? 'bg-red-50/35 border-red-200/50 shadow-inner'
                               : 'bg-white border-slate-200/80 hover:bg-slate-50 shadow-sm'
                           }`}
                         >
@@ -909,6 +957,8 @@ export default function GrowthImmunisationTab({ patient, themeColors }: GrowthIm
                           <div className="mt-0.5 shrink-0">
                             {isCompleted ? (
                               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            ) : isNotTaken ? (
+                              <XCircle className="w-4 h-4 text-red-500" />
                             ) : (
                               <Circle className="w-4 h-4 text-slate-300 hover:text-slate-500" />
                             )}
@@ -916,7 +966,7 @@ export default function GrowthImmunisationTab({ patient, themeColors }: GrowthIm
 
                           <div className="flex-1 space-y-0.5">
                             <div className="flex justify-between items-center">
-                              <span className={`text-[11px] font-black ${isCompleted ? 'text-slate-505 line-through' : 'text-slate-805'}`}>
+                              <span className={`text-[11px] font-black ${isCompleted ? 'text-slate-500 line-through' : isNotTaken ? 'text-slate-400 font-semibold' : 'text-slate-800'}`}>
                                 {v.name} <span className="font-medium text-slate-400 text-[9px]">({v.fullName})</span>
                               </span>
                             </div>
@@ -926,11 +976,52 @@ export default function GrowthImmunisationTab({ patient, themeColors }: GrowthIm
                             <p className="text-[9px] text-slate-400 leading-normal italic font-medium">
                               {v.notes}
                             </p>
-                            {isCompleted && (
-                              <span className="text-[8.5px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md inline-block mt-1">
-                                Taken
-                              </span>
-                            )}
+                            
+                            {/* Action Buttons Options */}
+                            <div className="flex flex-wrap items-center gap-1.5 pt-2">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setVaccineStatus(v.id, 'given');
+                                }}
+                                className={`px-2 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer ${
+                                  isCompleted
+                                    ? 'bg-emerald-600 text-white border-emerald-700'
+                                    : 'bg-slate-50 text-slate-500 border-slate-205 hover:bg-slate-100 hover:text-slate-850'
+                                }`}
+                              >
+                                Taken / Given
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setVaccineStatus(v.id, 'pending');
+                                }}
+                                className={`px-2 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer ${
+                                  status === 'pending'
+                                    ? 'bg-blue-600 text-white border-blue-700'
+                                    : 'bg-slate-50 text-slate-500 border-slate-205 hover:bg-slate-100 hover:text-slate-850'
+                                }`}
+                              >
+                                Pending
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setVaccineStatus(v.id, 'not_taken');
+                                }}
+                                className={`px-2 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer ${
+                                  isNotTaken
+                                    ? 'bg-red-650 text-white border-red-750'
+                                    : 'bg-slate-50 text-slate-500 border-slate-205 hover:bg-slate-100 hover:text-slate-850'
+                                }`}
+                              >
+                                Not Taken
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );

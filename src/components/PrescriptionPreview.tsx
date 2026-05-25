@@ -5,7 +5,11 @@ import {
   TeddyBear, ShieldHeart, BabyCarriage, LittleSun, CuteRocket, 
   HappyTooth, ClinicalApple, ToyBlocks, SleepingOwl, BabyPram 
 } from './PediatricLogos';
-import { Phone, Mail, MapPin, Clock, Award, ShieldCheck, Clipboard, HeartCrack, CalendarClock } from 'lucide-react';
+import { 
+  Phone, Mail, MapPin, Clock, Award, ShieldCheck, Clipboard, HeartCrack, CalendarClock,
+  Stethoscope, Heart, Activity, Baby, Shield, Smile, Sparkles, Beaker, Thermometer, Pill, 
+  Syringe, Brain, Dna, HeartPulse, BriefcaseMedical, Microscope, Eye, Sprout, Leaf, Droplet
+} from 'lucide-react';
 
 interface PrescriptionPreviewProps {
   prescription: Prescription;
@@ -52,6 +56,46 @@ export default function PrescriptionPreview({ prescription, settings, doctorProf
         return <SleepingOwl className="w-16 h-16" color={themeColors.primary} />;
       case 'baby-pram':
         return <BabyPram className="w-16 h-16" color={themeColors.primary} />;
+      case 'stethoscope':
+        return <Stethoscope className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'heart':
+        return <Heart className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'activity':
+        return <Activity className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'baby':
+        return <Baby className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'shield':
+        return <Shield className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'smile':
+        return <Smile className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'sparkles':
+        return <Sparkles className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'beaker':
+        return <Beaker className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'thermometer':
+        return <Thermometer className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'pill':
+        return <Pill className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'syringe':
+        return <Syringe className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'brain':
+        return <Brain className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'dna':
+        return <Dna className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'heart-pulse':
+        return <HeartPulse className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'first-aid':
+        return <BriefcaseMedical className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'microscope':
+        return <Microscope className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'eye':
+        return <Eye className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'sprout':
+        return <Sprout className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'leaf':
+        return <Leaf className="w-14 h-14" style={{ color: themeColors.primary }} />;
+      case 'droplet':
+        return <Droplet className="w-14 h-14" style={{ color: themeColors.primary }} />;
       case 'minimalist':
       default:
         return <MinimalistCross className="w-14 h-14 text-blue-600 print:text-blue-700" color={themeColors.primary} />;

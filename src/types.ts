@@ -27,11 +27,11 @@ export interface Medication {
 }
 
 export interface LetterheadSettings {
-  themeColor: 'royal' | 'teal' | 'indigo' | 'deepsea';
+  themeColor: string;
   watermark: 'bear' | 'stethoscope' | 'shield' | 'none';
   showVitals: boolean;
   showClinicalFeed: boolean; // Left sidebar for complaints, findings, milestones
-  logoStyle: 'cute-panda' | 'stethoscope-pulse' | 'happy-baby' | 'minimalist' | 'teddy-bear' | 'shield-heart' | 'baby-carriage' | 'little-sun' | 'cute-rocket' | 'happy-tooth' | 'clinical-apple' | 'toy-blocks' | 'sleeping-owl' | 'baby-pram';
+  logoStyle: string;
   qrCodeLink: string;
   qrCodeEnabled: boolean;
   gridPaper: boolean;
@@ -71,9 +71,9 @@ export interface DoctorProfile {
   name: string;
   speciality: string;
   registrationNumber: string;
-  clinicName: string;
-  clinicAddress: string;
+  clinicName?: string;
+  clinicAddress?: string;
   clinicPhone: string;
-  clinicTimings: string;
+  clinicTimings?: string;
   email: string;
 }

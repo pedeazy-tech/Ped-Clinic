@@ -429,69 +429,94 @@ export default function PrescriptionForm({
     <div className="bg-white rounded-2xl border border-slate-200/85 shadow-md overflow-hidden flex flex-col h-[calc(100vh-140px)] lg:h-[820px] transition-all no-print">
       
       {/* Tab Navigation header */}
-      <div className="flex bg-slate-50 border-b border-slate-100 p-1 divide-x divide-slate-100">
+      <div className="flex bg-slate-50 border-b border-slate-100 p-1 divide-x divide-slate-100/60">
         <button
           type="button"
           onClick={() => setActiveTab('patient')}
-          className={`flex-1 flex flex-col items-center gap-1.5 py-3 text-xs font-semibold rounded-lg transition-all ${
+          style={
             activeTab === 'patient' 
-              ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50' 
+              ? { backgroundColor: themeColors.subtle, color: themeColors.text, borderColor: themeColors.border }
+              : {}
+          }
+          className={`flex-1 flex flex-col items-center gap-1.5 py-3 text-xs font-semibold rounded-lg transition-all border border-transparent ${
+            activeTab === 'patient' 
+              ? 'shadow-sm' 
               : 'text-slate-500 hover:text-slate-800 hover:bg-white/40'
           }`}
         >
-          <User className="w-4 h-4" />
+          <User className="w-4 h-4" style={{ color: activeTab === 'patient' ? themeColors.primary : undefined }} />
           <span>Patient Profile</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('clinical')}
-          className={`flex-1 flex flex-col items-center gap-1.5 py-3 text-xs font-semibold rounded-lg transition-all ${
+          style={
             activeTab === 'clinical' 
-              ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50' 
+              ? { backgroundColor: themeColors.subtle, color: themeColors.text, borderColor: themeColors.border }
+              : {}
+          }
+          className={`flex-1 flex flex-col items-center gap-1.5 py-3 text-xs font-semibold rounded-lg transition-all border border-transparent ${
+            activeTab === 'clinical' 
+              ? 'shadow-sm' 
               : 'text-slate-500 hover:text-slate-800 hover:bg-white/40'
           }`}
         >
-          <Baby className="w-4 h-4" />
+          <Baby className="w-4 h-4" style={{ color: activeTab === 'clinical' ? themeColors.primary : undefined }} />
           <span>Clinical Exam</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('medications')}
-          className={`flex-1 flex flex-col items-center gap-1.5 py-3 text-xs font-semibold rounded-lg transition-all ${
+          style={
             activeTab === 'medications' 
-              ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50' 
+              ? { backgroundColor: themeColors.subtle, color: themeColors.text, borderColor: themeColors.border }
+              : {}
+          }
+          className={`flex-1 flex flex-col items-center gap-1.5 py-3 text-xs font-semibold rounded-lg transition-all border border-transparent ${
+            activeTab === 'medications' 
+              ? 'shadow-sm' 
               : 'text-slate-500 hover:text-slate-800 hover:bg-white/40'
           }`}
         >
-          <HeartPulse className="w-4 h-4" />
+          <HeartPulse className="w-4 h-4" style={{ color: activeTab === 'medications' ? themeColors.primary : undefined }} />
           <span>Rx Medications</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('advice')}
-          className={`flex-1 flex flex-col items-center gap-1.5 py-3 text-xs font-semibold rounded-lg transition-all ${
+          style={
             activeTab === 'advice' 
-              ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50' 
+              ? { backgroundColor: themeColors.subtle, color: themeColors.text, borderColor: themeColors.border }
+              : {}
+          }
+          className={`flex-1 flex flex-col items-center gap-1.5 py-3 text-xs font-semibold rounded-lg transition-all border border-transparent ${
+            activeTab === 'advice' 
+              ? 'shadow-sm' 
               : 'text-slate-500 hover:text-slate-800 hover:bg-white/40'
           }`}
         >
-          <ListCheck className="w-4 h-4" />
+          <ListCheck className="w-4 h-4" style={{ color: activeTab === 'advice' ? themeColors.primary : undefined }} />
           <span>Diet & Advice</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('settings')}
-          className={`flex-1 flex flex-col items-center gap-1.5 py-3 text-xs font-semibold rounded-lg transition-all ${
+          style={
             activeTab === 'settings' 
-              ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50' 
+              ? { backgroundColor: themeColors.subtle, color: themeColors.text, borderColor: themeColors.border }
+              : {}
+          }
+          className={`flex-1 flex flex-col items-center gap-1.5 py-3 text-xs font-semibold rounded-lg transition-all border border-transparent ${
+            activeTab === 'settings' 
+              ? 'shadow-sm' 
               : 'text-slate-500 hover:text-slate-800 hover:bg-white/40'
           }`}
         >
-          <Settings className="w-4 h-4" />
+          <Settings className="w-4 h-4" style={{ color: activeTab === 'settings' ? themeColors.primary : undefined }} />
           <span>Letterhead Style</span>
         </button>
       </div>
@@ -502,19 +527,6 @@ export default function PrescriptionForm({
         {/* ================= TAB: PATIENT ================= */}
         {activeTab === 'patient' && (
           <div className="space-y-4">
-            <div className="flex justify-between items-center bg-blue-50/40 p-3 rounded-xl border border-blue-100/40">
-              <span className="text-xs text-slate-500 leading-relaxed max-w-xs">
-                Load a pre-filled mock patient to quickly test-drive calculated pediatric doses!
-              </span>
-              <button
-                type="button"
-                onClick={loadDemoPatient}
-                className="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-700 active:scale-95 flex items-center gap-1 cursor-pointer transition-all shadow-sm"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Onload Demo Case</span>
-              </button>
-            </div>
 
             <div className="grid grid-cols-2 gap-3.5">
               <div className="col-span-2">
@@ -1140,28 +1152,37 @@ export default function PrescriptionForm({
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-2">Letterhead Color Accent Theme</label>
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { id: 'royal', label: 'Royal Blue', color: 'bg-blue-600' },
-                  { id: 'teal', label: 'Pediatric Teal', color: 'bg-teal-700' },
-                  { id: 'indigo', label: 'Indigo Blue', color: 'bg-indigo-600' },
-                  { id: 'deepsea', label: 'Deep Sea Blue', color: 'bg-cyan-700' }
-                ].map((th) => (
-                  <button
-                    key={th.id}
-                    type="button"
-                    onClick={() => setSettings(prev => ({ ...prev, themeColor: th.id as any }))}
-                    className={`p-2 rounded-xl border flex flex-col items-center gap-1 text-[10px] font-semibold transition-all cursor-pointer ${
-                      settings.themeColor === th.id
-                        ? 'border-blue-400 bg-blue-50 text-blue-600 shadow-sm'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-500'
-                    }`}
-                  >
-                    <span className={`w-4 h-4 rounded-full ${th.color} shadow-inner`}></span>
-                    <span>{th.label}</span>
-                  </button>
-                ))}
-              </div>
+              <select
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs focus:outline-none font-medium text-slate-700"
+                value={settings.themeColor}
+                onChange={(e) => setSettings(prev => ({ ...prev, themeColor: e.target.value }))}
+                style={{
+                  borderColor: themeColors.border,
+                  backgroundColor: themeColors.subtle,
+                  color: themeColors.text
+                }}
+              >
+                <option value="royal">🟢 Classic Medical Teal (Royal)</option>
+                <option value="teal">🟢 Mint Pediatric Teal (Teal)</option>
+                <option value="indigo">🟢 Sage / Spruce Forest (Indigo)</option>
+                <option value="deepsea">🔵 Turquoise Ocean (Deep Sea)</option>
+                <option value="sky">🔵 Breezy Sky Blue (Sky)</option>
+                <option value="cobalt">🔵 Cobalt Academic Blue (Cobalt)</option>
+                <option value="navy">🔵 Deep Navy Blue (Navy)</option>
+                <option value="grape">🟣 Lavender Grape (Grape)</option>
+                <option value="orchid">🟣 Fuchsia Orchid (Orchid)</option>
+                <option value="rose">🔴 Rosy Blossom Pink (Rose)</option>
+                <option value="coral">🔴 Coral Red (Coral)</option>
+                <option value="terracotta">🟠 Warm Terracotta Orange (Terracotta)</option>
+                <option value="amber">🟠 Amber Honey Gold (Amber)</option>
+                <option value="yellow">🟡 Olive Yellow (Yellow)</option>
+                <option value="lime">🟢 Therapeutic Lime Green (Lime)</option>
+                <option value="forest">🟢 Deep Jungle Forest (Forest)</option>
+                <option value="emerald">🟢 Spirited Emerald Green (Emerald)</option>
+                <option value="slate">⚫ Professional Charcoal Slate (Slate)</option>
+                <option value="bronze">🟤 Cozy Antique Bronze (Bronze)</option>
+                <option value="plum">🔴 Autumn Plum Magenta (Plum)</option>
+              </select>
             </div>
 
             <div className="pt-3 border-t border-slate-100 space-y-3">
@@ -1188,6 +1209,26 @@ export default function PrescriptionForm({
                     <option value="toy-blocks">Alphabet Toy Blocks</option>
                     <option value="sleeping-owl">Wise Sleeping Owl</option>
                     <option value="baby-pram">Retro Pediatric Pram</option>
+                    <option value="stethoscope">Stethoscope Professional</option>
+                    <option value="heart">Loving Care Heart</option>
+                    <option value="activity">ECG Pulse Track</option>
+                    <option value="baby">Healthy Pediatric Baby</option>
+                    <option value="shield">Safe Medical Shield</option>
+                    <option value="smile">Healthy Kid Smile</option>
+                    <option value="sparkles">Wellness Spark Icon</option>
+                    <option value="beaker">Chemical Research Beaker</option>
+                    <option value="thermometer">Clinical Temperature</option>
+                    <option value="pill">Capsule Treatment Pill</option>
+                    <option value="syringe">Vaccine Syringe Logo</option>
+                    <option value="brain">Cognitive Neurology Brain</option>
+                    <option value="dna">Genetics DNA Helix</option>
+                    <option value="heart-pulse">Cardiovascular Heart Rate</option>
+                    <option value="first-aid">First Aid Kit Box</option>
+                    <option value="microscope">Diagnostic Microscope</option>
+                    <option value="eye">Ophthalmic Vision Circle</option>
+                    <option value="sprout">Natural Sprout Health</option>
+                    <option value="leaf">Organic Green Medicine</option>
+                    <option value="droplet">Pure Hydration Droplet</option>
                     <option value="minimalist">Clinical Red Cross</option>
                   </select>
                 </div>
@@ -1264,15 +1305,6 @@ export default function PrescriptionForm({
                     onChange={(e) => setSettings(prev => ({ ...prev, showVitals: e.target.checked }))}
                   />
                   <span>Display Secondary Clinical Vitals Bar</span>
-                </label>
-                <label className="flex items-center gap-1.5 text-xs text-slate-600">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 text-blue-600 rounded"
-                    checked={settings.gridPaper}
-                    onChange={(e) => setSettings(prev => ({ ...prev, gridPaper: e.target.checked }))}
-                  />
-                  <span>Enable Subtle Grid Paper Texture Block</span>
                 </label>
               </div>
             </div>
