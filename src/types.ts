@@ -52,6 +52,7 @@ export interface Prescription {
   diagnosis: string;
   medications: Medication[];
   previousMedications?: string;
+  investigations?: string[];
   advice: string;
   createdAt: string;
 }

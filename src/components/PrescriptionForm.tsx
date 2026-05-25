@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Prescription, LetterheadSettings, Medication } from '../types';
-import { PEDIATRIC_DRUGS_REFERENCE, COMMON_COMPLAINTS, COMMON_FINDINGS, COMMON_DIAGNOSES, PEDIATRIC_DIETARY_ADVICE } from '../data/clinicalData';
+import { PEDIATRIC_DRUGS_REFERENCE, COMMON_COMPLAINTS, COMMON_FINDINGS, COMMON_DIAGNOSES, PEDIATRIC_DIETARY_ADVICE, DIAGNOSTIC_INVESTIGATIONS_REFERENCE } from '../data/clinicalData';
 import { 
   User, Baby, HeartPulse, Sparkles, Plus, Trash2, Settings, ListCheck, CheckCircle2, 
-  RotateCcw, Printer, FileDown, Heart, Eye, ArrowUpRight, CloudLightning, PencilLine 
+  RotateCcw, Printer, FileDown, Heart, Eye, ArrowUpRight, CloudLightning, PencilLine,
+  FlaskConical, Search
 } from 'lucide-react';
 import DoseCalculator from './DoseCalculator';
 
@@ -25,11 +26,45 @@ export default function PrescriptionForm({
   themeColors
 }: PrescriptionFormProps) {
   // Tabs for structured editing
-  const [activeTab, setActiveTab] = useState<'patient' | 'clinical' | 'medications' | 'advice' | 'settings'>('patient');
+  const [activeTab, setActiveTab] = useState<'patient' | 'clinical' | 'medications' | 'investigations' | 'advice' | 'settings'>('patient');
 
   // Input states for adding items
   const [customComplaint, setCustomComplaint] = useState('');
   const [customFinding, setCustomFinding] = useState('');
+  
+  // Investigations Tab States & Helpers
+  const [searchTestTerm, setSearchTestTerm] = useState('');
+  const [isTestDropdownOpen, setIsTestDropdownOpen] = useState(false);
+
+  const handleAddInvestigation = (testName: string) => {
+    if (!testName.trim()) return;
+    const cleanName = testName.trim();
+    setPrescription(prev => {
+      const current = prev.investigations || [];
+      if (current.includes(cleanName)) return prev;
+      return {
+        ...prev,
+        investigations: [...current, cleanName]
+      };
+    });
+    setSearchTestTerm('');
+    setIsTestDropdownOpen(false);
+  };
+
+  const toggleInvestigation = (testName: string) => {
+    if (!testName.trim()) return;
+    const cleanName = testName.trim();
+    setPrescription(prev => {
+      const current = prev.investigations || [];
+      const exists = current.includes(cleanName);
+      return {
+        ...prev,
+        investigations: exists 
+          ? current.filter(t => t !== cleanName)
+          : [...current, cleanName]
+      };
+    });
+  };
   
   // Custom Medication Add States
   const [medName, setMedName] = useState('');
@@ -55,14 +90,18 @@ export default function PrescriptionForm({
   const [favorites, setFavorites] = useState<FavoriteMed[]>(() => {
     const saved = localStorage.getItem('ped_favorite_drugs_v1');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try {
+        const parsed = JSON.parse(saved);
+        // Force dose to be empty on loaded favorites as per clinical spec
+        return parsed.map((item: any) => ({ ...item, dosage: '' }));
+      } catch (e) {}
     }
     // standard clinic defaults
     return [
-      { id: 'fav-1', name: 'Syrup Calpol 250', type: 'Syrup', dosage: '5 ml', frequency: 'Thrice Daily (TDS)', timing: 'After Food', duration: '3-5 days', notes: 'SOS if temp > 100 F' },
-      { id: 'fav-2', name: 'Syrup Ondem 2mg', type: 'Suspension' as any, dosage: '2.5 ml', frequency: 'Thrice Daily (TDS)', timing: 'Before Food', duration: '3 days', notes: 'Give 15 minutes before feed/solids' },
-      { id: 'fav-3', name: 'Nasal Spray Nasoclear', type: 'Drops' as any, dosage: '2 drops', frequency: 'As needed (PRN / SOS)', timing: 'None', duration: '5 days', notes: 'Apply in both nostrils before feeding' },
-      { id: 'fav-4', name: 'Syrup Augmentin 228.5', type: 'Suspension' as any, dosage: '5 ml', frequency: 'Twice Daily (BD)', timing: 'With Food', duration: '5 days', notes: 'Finish full 5-day course' }
+      { id: 'fav-1', name: 'Syrup Calpol 250', type: 'Syrup', dosage: '', frequency: 'Thrice Daily (TDS)', timing: 'After Food', duration: '3-5 days', notes: 'SOS if temp > 100 F' },
+      { id: 'fav-2', name: 'Syrup Ondem 2mg', type: 'Suspension' as any, dosage: '', frequency: 'Thrice Daily (TDS)', timing: 'Before Food', duration: '3 days', notes: 'Give 15 minutes before feed/solids' },
+      { id: 'fav-3', name: 'Nasal Spray Nasoclear', type: 'Drops' as any, dosage: '', frequency: 'As needed (PRN / SOS)', timing: 'None', duration: '5 days', notes: 'Apply in both nostrils before feeding' },
+      { id: 'fav-4', name: 'Syrup Augmentin 228.5', type: 'Suspension' as any, dosage: '', frequency: 'Twice Daily (BD)', timing: 'With Food', duration: '5 days', notes: 'Finish full 5-day course' }
     ];
   });
 
@@ -79,7 +118,7 @@ export default function PrescriptionForm({
         id: 'fav_' + Math.random().toString(36).substring(2, 9),
         name: med.name.trim(),
         type: med.type,
-        dosage: med.dosage,
+        dosage: '', // Always saved without dose
         frequency: med.frequency,
         timing: med.timing,
         duration: med.duration,
@@ -97,24 +136,25 @@ export default function PrescriptionForm({
   const useFavorite = (fav: FavoriteMed) => {
     setMedName(fav.name);
     setMedType(fav.type);
-    setMedDosage(fav.dosage);
+    setMedDosage(''); // Explicitly blank out dosage for manual/auto-calc input
     setMedFrequency(fav.frequency);
     setMedTiming(fav.timing);
     setMedDuration(fav.duration);
     setMedNotes(fav.notes);
+    
+    // Automatically focus the manual Dose field
+    setTimeout(() => {
+      const field = document.getElementById('med-dosage-input');
+      if (field) {
+        field.focus();
+      }
+    }, 50);
   };
 
   const addFavoriteDirectly = (fav: FavoriteMed, e: React.MouseEvent) => {
     e.stopPropagation();
-    handleAddMedication({
-      name: fav.name,
-      type: fav.type,
-      dosage: fav.dosage,
-      frequency: fav.frequency,
-      timing: fav.timing,
-      duration: fav.duration,
-      notes: fav.notes
-    });
+    // Instead of direct clinically-unsafe add, we load to form and focus dosage input!
+    useFavorite(fav);
   };
 
   // Canvas Signature pad ref
@@ -398,6 +438,12 @@ export default function PrescriptionForm({
           medications: []
         }));
         break;
+      case 'investigations':
+        setPrescription(prev => ({
+          ...prev,
+          investigations: []
+        }));
+        break;
       case 'advice':
         setPrescription(prev => ({
           ...prev,
@@ -419,6 +465,7 @@ export default function PrescriptionForm({
       case 'patient': return 'Clear Patient Details';
       case 'clinical': return 'Clear Clinical & Diagnosis';
       case 'medications': return 'Clear Rx Medications';
+      case 'investigations': return 'Clear Ordered Investigations';
       case 'advice': return 'Clear Dietary Advice';
       case 'settings': return 'Clear Signature & Profile settings';
       default: return 'Clear Tab Details';
@@ -482,6 +529,24 @@ export default function PrescriptionForm({
         >
           <HeartPulse className="w-4 h-4" style={{ color: activeTab === 'medications' ? themeColors.primary : undefined }} />
           <span>Rx Medications</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('investigations')}
+          style={
+            activeTab === 'investigations' 
+              ? { backgroundColor: themeColors.subtle, color: themeColors.text, borderColor: themeColors.border }
+              : {}
+          }
+          className={`flex-1 flex flex-col items-center gap-1.5 py-3 text-xs font-semibold rounded-lg transition-all border border-transparent ${
+            activeTab === 'investigations' 
+              ? 'shadow-sm' 
+              : 'text-slate-500 hover:text-slate-800 hover:bg-white/40'
+          }`}
+        >
+          <FlaskConical className="w-4 h-4" style={{ color: activeTab === 'investigations' ? themeColors.primary : undefined }} />
+          <span>Investigations</span>
         </button>
 
         <button
@@ -838,12 +903,12 @@ export default function PrescriptionForm({
 
             {/* Frequently Used Drugs Section */}
             <div className="border border-blue-100 rounded-xl p-3.5 space-y-2.5 bg-[#f0f9ff]/50">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center bg-transparent">
                 <h4 className="text-xs font-black text-blue-800 uppercase tracking-wider flex items-center gap-1.5">
                   <Heart className="w-3.5 h-3.5 text-blue-600 fill-blue-500/20" />
                   <span>Frequently Used Therapeutics ({favorites.length})</span>
                 </h4>
-                <span className="text-[10px] text-slate-500">Click card to use • (+) to add Rx</span>
+                <span className="text-[10px] text-slate-500 font-medium">Click card to use (dose entered manually)</span>
               </div>
 
               {favorites.length > 0 ? (
@@ -859,14 +924,14 @@ export default function PrescriptionForm({
                           {fav.name}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {/* Add directly button */}
+                          {/* Use / Prefill indicator instead of direct add */}
                           <button
                             type="button"
-                            onClick={(e) => addFavoriteDirectly(fav, e)}
-                            className="p-1 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
-                            title="Add directly to prescription"
+                            onClick={(e) => { e.stopPropagation(); useFavorite(fav); }}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                            title="Prefill this therapeutic template"
                           >
-                            <Plus className="w-3.5 h-3.5" />
+                            <ArrowUpRight className="w-3.5 h-3.5" />
                           </button>
                           {/* Delete favorite button */}
                           <button
@@ -881,7 +946,7 @@ export default function PrescriptionForm({
                       </div>
                       <div className="text-[9px] text-slate-500 font-mono mt-1 flex flex-wrap gap-1 items-center">
                         <span className="bg-slate-100 px-1 py-0.2 rounded text-[8px] uppercase font-bold text-slate-500">{fav.type}</span>
-                        <span>• {fav.dosage}</span>
+                        <span className="text-amber-600 font-extrabold bg-amber-50/80 px-1.5 py-0.5 rounded border border-amber-200/60 scale-95 origin-left text-[8px]">Dose: Enter/Calc</span>
                         <span>• {fav.frequency.split(' (')[0]}</span>
                       </div>
                       {fav.notes && (
@@ -945,11 +1010,16 @@ export default function PrescriptionForm({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-slate-500 mb-1">Dose / Volume</label>
+                  <label className="block text-[11px] text-slate-500 mb-1">Dose / Volume <span className="text-red-400 font-bold">*</span></label>
                   <input
                     type="text"
-                    placeholder="e.g. 5 ml or 2.5 ml"
-                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none"
+                    id="med-dosage-input"
+                    placeholder="Enter manual dose (e.g. 5 ml)"
+                    className={`w-full bg-white border rounded-lg px-3 py-1.5 text-xs focus:outline-none transition-all ${
+                      !medDosage.trim() 
+                        ? 'border-amber-300 bg-amber-50/20 focus:ring-1 focus:ring-amber-500 placeholder-amber-600/60 font-semibold' 
+                        : 'border-slate-200 focus:ring-1 focus:ring-indigo-500'
+                    }`}
                     value={medDosage}
                     onChange={(e) => setMedDosage(e.target.value)}
                   />
@@ -1089,6 +1159,218 @@ export default function PrescriptionForm({
               <p className="text-[10px] text-slate-400 italic leading-snug">
                 These settings persist and render automatically in the final printable Rx as "Active Maintenance / Past Medications".
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB: INVESTIGATIONS ================= */}
+        {activeTab === 'investigations' && (
+          <div className="space-y-4">
+            <div className="border border-indigo-100 rounded-xl p-4 space-y-4 bg-indigo-50/20">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-indigo-600 rounded-lg text-white">
+                  <FlaskConical className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-850">Order Investigations & Clinical Diagnostics</h3>
+                  <p className="text-[10px] text-slate-550 font-medium">Search the medical index or type custom tests</p>
+                </div>
+              </div>
+
+              {/* Typed Search / Manual Enter dropdown */}
+              <div className="relative">
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Search or Enter Diagnostic Test Name</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-16 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
+                    placeholder="e.g. CBC, Chest X-Ray, Typhidot, Liver Function..."
+                    value={searchTestTerm}
+                    onChange={(e) => {
+                      setSearchTestTerm(e.target.value);
+                      setIsTestDropdownOpen(true);
+                    }}
+                    onFocus={() => setIsTestDropdownOpen(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddInvestigation(searchTestTerm);
+                      }
+                    }}
+                  />
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    <Search className="w-3.5 h-3.5" />
+                  </span>
+                  {searchTestTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTestTerm('')}
+                      className="absolute right-14 top-1/2 -translate-y-1/2 text-slate-450 hover:text-slate-650 font-bold p-0.5 text-sm"
+                    >
+                      ×
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleAddInvestigation(searchTestTerm)}
+                    disabled={!searchTestTerm.trim()}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] px-2.5 py-1 rounded transition-colors disabled:opacity-40"
+                  >
+                    Add
+                  </button>
+                </div>
+
+                {/* Dropdown with categories */}
+                {isTestDropdownOpen && (
+                  <div className="absolute z-30 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-72 overflow-y-auto divide-y divide-slate-105">
+                    {/* If typed has matches */}
+                    {(() => {
+                      let matchCount = 0;
+                      const term = searchTestTerm.toLowerCase().trim();
+                      return DIAGNOSTIC_INVESTIGATIONS_REFERENCE.map((catObj) => {
+                        const matchingTests = catObj.tests.filter(test => 
+                          test.toLowerCase().includes(term)
+                        );
+                        if (matchingTests.length === 0) return null;
+                        matchCount += matchingTests.length;
+                        return (
+                          <div key={catObj.category} className="p-1 px-2.5">
+                            <div className="text-[9px] font-black tracking-wider uppercase text-indigo-550 py-1">{catObj.category}</div>
+                            <div className="grid grid-cols-1 gap-0.5">
+                              {matchingTests.map(test => (
+                                <button
+                                  key={test}
+                                  type="button"
+                                  onClick={() => {
+                                    handleAddInvestigation(test);
+                                    setSearchTestTerm('');
+                                    setIsTestDropdownOpen(false);
+                                  }}
+                                  className="w-full text-left font-medium text-xs py-1 px-1.5 rounded hover:bg-indigo-50 text-slate-705 hover:text-indigo-900 transition-colors"
+                                >
+                                  {test}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+
+                    {/* Manual entry helper if they customized */}
+                    {searchTestTerm.trim() && (
+                      <div className="p-2 bg-slate-50 flex items-center justify-between gap-1.5 border-t border-slate-150">
+                        <span className="text-[10px] text-slate-500 italic font-medium leading-tight">Can't find '{searchTestTerm}'? Add as custom.</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleAddInvestigation(searchTestTerm);
+                            setSearchTestTerm('');
+                            setIsTestDropdownOpen(false);
+                          }}
+                          className="text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-0.5 rounded font-semibold shrink-0"
+                        >
+                          Add Custom
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Click outside backdrop for dropdown */}
+              {isTestDropdownOpen && (
+                <div className="fixed inset-0 z-20 cursor-default" onClick={() => setIsTestDropdownOpen(false)} />
+              )}
+            </div>
+
+            {/* Subcategorized Reference Quick Grid / Checklists */}
+            <div className="space-y-3">
+              <div className="flex justify-between items-center px-0.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">Common Investigations (Quick Click to Add)</label>
+                <span className="text-[10px] text-slate-500 font-mono">Tap test to toggle order</span>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {DIAGNOSTIC_INVESTIGATIONS_REFERENCE.map((catObj) => (
+                  <div key={catObj.category} className="border border-slate-200 bg-white rounded-xl p-3 space-y-2 shadow-xs transition-hover hover:border-indigo-150">
+                    <h4 className="text-[10.5px] font-extrabold text-indigo-700 border-b border-indigo-50 pb-1 uppercase tracking-wider">{catObj.category}</h4>
+                    <div className="grid grid-cols-1 gap-1">
+                      {catObj.tests.slice(0, 6).map((test) => {
+                        const isOrdered = prescription.investigations?.includes(test) || false;
+                        return (
+                          <button
+                            type="button"
+                            key={test}
+                            onClick={() => toggleInvestigation(test)}
+                            className={`w-full text-left text-[11px] font-medium py-1 px-2 rounded-lg border transition-all flex items-center justify-between cursor-pointer ${
+                              isOrdered 
+                                ? 'bg-indigo-50 border-indigo-3 00 text-indigo-805 font-extrabold shadow-sm' 
+                                : 'bg-slate-50/50 border-slate-100 hover:border-slate-200 text-slate-600'
+                            }`}
+                          >
+                            <span className="truncate pr-1">{test}</span>
+                            <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[8px] font-black select-none shrink-0 ${
+                              isOrdered 
+                                ? 'bg-indigo-600 border-indigo-600 text-white' 
+                                : 'border-slate-300 bg-white text-transparent'
+                            }`}>
+                              ✓
+                            </span>
+                          </button>
+                        );
+                      })}
+                      {catObj.tests.length > 6 && (
+                        <div className="text-[9.5px] text-indigo-500/80 font-medium text-center pt-1.5 border-t border-slate-100/50">
+                          + Search for {catObj.tests.length - 6} more diagnostics here...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Currently Ordered Investigations listing */}
+            <div className="space-y-2 pt-3 border-t border-slate-100">
+              <div className="flex justify-between items-center">
+                <label className="block text-xs font-bold text-slate-700">Investigations Prescribed for Print ({prescription.investigations?.length || 0})</label>
+                {(prescription.investigations?.length || 0) > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setPrescription(prev => ({ ...prev, investigations: [] }))}
+                    className="text-[10px] text-red-500 hover:text-red-700 font-semibold cursor-pointer border-none bg-transparent"
+                  >
+                    Clear All Orders
+                  </button>
+                )}
+              </div>
+              
+              {(prescription.investigations?.length || 0) > 0 ? (
+                <div className="border border-slate-150 rounded-xl bg-slate-50/50 divide-y divide-slate-100 shadow-xs">
+                  {prescription.investigations?.map((test, index) => (
+                    <div key={test + '-' + index} className="flex justify-between items-center px-3 py-2 bg-white first:rounded-t-xl last:rounded-b-xl group hover:bg-slate-50/40">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-slate-400 font-mono w-4">{index + 1}.</span>
+                        <span className="text-xs font-bold text-slate-700">{test}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleInvestigation(test)}
+                        className="text-slate-400 hover:text-red-500 p-1 rounded hover:bg-red-50 cursor-pointer transition-all"
+                        title="Remove test order"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-5 border border-dashed border-slate-200 rounded-xl bg-slate-50/30">
+                  <p className="text-xs text-slate-400 italic">No investigations are ordered yet for this patient.</p>
+                  <p className="text-[9px] text-slate-450 mt-1">Select from the common panels above, or search/type custom tests in the box above.</p>
+                </div>
+              )}
             </div>
           </div>
         )}

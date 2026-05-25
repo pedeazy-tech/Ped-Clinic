@@ -500,6 +500,24 @@ export default function PrescriptionPreview({ prescription, settings, doctorProf
               </div>
             )}
 
+            {/* Ordered Investigations Section */}
+            {prescription.investigations && prescription.investigations.length > 0 && (
+              <div className="mt-4 p-3 bg-indigo-50/10 border border-indigo-100/50 rounded-xl space-y-1.5 shadow-xs">
+                <h5 className="text-[9px] font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                  <span>Investigations Ordered / Diagnostic Plan</span>
+                </h5>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 pl-2.5 bg-transparent">
+                  {prescription.investigations.map((test, idx) => (
+                    <li key={test + '-' + idx} className="text-xs text-slate-800 font-bold flex items-start gap-1">
+                      <span className="text-slate-400 font-mono select-none">{idx + 1}.</span>
+                      <span>{test}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {prescription.previousMedications && (
               <div className="mt-4 p-3 bg-slate-50/75 border border-slate-200/40 rounded-xl space-y-1 shadow-sm">
                 <h5 className="text-[9px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">

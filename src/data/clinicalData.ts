@@ -1644,3 +1644,91 @@ export const PEDIATRIC_MILESTONES = [
   'Speaks 2-3 single words with meaning (12-15 months)',
   'Scribbles & speaks simple sentences (18-24 months)'
 ];
+
+export const DIAGNOSTIC_INVESTIGATIONS_REFERENCE = [
+  {
+    category: 'Hematology / Blood Tests',
+    tests: [
+      'Complete Blood Count (CBC)',
+      'Hemoglobin Estimation',
+      'Total Leucocyte Count (TLC)',
+      'Differential Leucocyte Count (DLC)',
+      'Platelet Count',
+      'Erythrocyte Sedimentation Rate (ESR)',
+      'Peripheral Blood Smear',
+      'Reticulocyte Count',
+      'Packed Cell Volume (PCV)',
+      'Blood Group & Rh Typing'
+    ]
+  },
+  {
+    category: 'Biochemistry / Metabolic Panel',
+    tests: [
+      'C-Reactive Protein (CRP) Quantitative',
+      'Serum Electrolytes (Na+, K+, Cl-)',
+      'Serum Bilirubin - Total, Direct & Indirect',
+      'Liver Function Test (LFT)',
+      'Renal Function Test / Kidney Profile (KFT)',
+      'Blood Urea Nitrogen (BUN)',
+      'Serum Creatinine',
+      'Random Blood Sugar (RBS)',
+      'Fasting Blood Sugar (FBS)',
+      'HbA1c',
+      'Serum Calcium / Ionic Calcium',
+      'Serum Alkaline Phosphatase (ALP)'
+    ]
+  },
+  {
+    category: 'Infectious Diseases / Serology',
+    tests: [
+      'Widal Test (for Typhoid)',
+      'Typhidot (IgM & IgG)',
+      'Dengue Serology (NS1 Antigen, IgM, IgG)',
+      'Malaria Antigen (RDT / smear)',
+      'Influenza A/B PCR',
+      'COVID-19 Rapid Antigen / RT-PCR',
+      'Urine Culture & Sensitivity',
+      'Stool Culture & Sensitivity',
+      'Blood Culture & Sensitivity',
+      'Mantoux Test (PPD)',
+      'ASO Titre'
+    ]
+  },
+  {
+    category: 'Urine & Stool Analysis',
+    tests: [
+      'Urine Routine & Microscopy (U-R/M)',
+      'Urine Bile Malt / Bile Pigment',
+      'Urine Microalbumin',
+      'Stool Routine & Microscopy (S-R/M)',
+      'Stool for Reducing Substances',
+      'Stool Occult Blood'
+    ]
+  },
+  {
+    category: 'Radiology & Imaging',
+    tests: [
+      'Chest X-Ray (A/P View)',
+      'Chest X-Ray (P/A View)',
+      'X-Ray PNS (Para-Nasal Sinuses)',
+      'X-Ray Abdomen (Erect / Supine)',
+      'X-Ray Limbs / Joints (Anteroposterior & Lateral)',
+      'USG Whole Abdomen (Ultra-sonography)',
+      'USG KUB (Kidney, Ureters, Bladder)',
+      'Echocardiography (Pediatric 2D-Echo)',
+      'HRCT Chest (High Resolution CT)',
+      'MRI Brain (Pediatric)'
+    ]
+  },
+  {
+    category: 'Special / Other Diagnostic Investigations',
+    tests: [
+      'Sweet Chloride Test (Cystic Fibrosis)',
+      'Thyroid Profile (TSH, Free T3, Free T4)',
+      'Serum IgE Level',
+      'G6PD Enzyme Assay',
+      'EEG (Electroencephalogram)',
+      'Cerebrospinal Fluid (CSF) Analysis'
+    ]
+  }
+];

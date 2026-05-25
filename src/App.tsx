@@ -177,6 +177,7 @@ const BLANK_PRESCRIPTION = {
   diagnosis: '',
   medications: [],
   previousMedications: '',
+  investigations: [],
   advice: '',
   createdAt: new Date().toISOString()
 };
@@ -233,6 +234,7 @@ const DEFAULT_PRESCRIPTION: Prescription = {
     }
   ],
   previousMedications: 'Vitamin D3 drops (D3-Must) 1 ml once daily (long term maintainance)',
+  investigations: ['Complete Blood Count (CBC)', 'C-Reactive Protein (CRP) Quantitative'],
   advice: 'Give plenty of oral electrolyte hydration fluids (ORS). Sponging with room-temperature tap water if fever climbs. Light semi-solid food (Mashed Khichdi/Curd-Rice). Avoid cows milk temporarily.',
   createdAt: new Date().toISOString()
 };
