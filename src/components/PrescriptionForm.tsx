@@ -1186,28 +1186,7 @@ export default function PrescriptionForm({
             </div>
 
             <div className="pt-3 border-t border-slate-100 space-y-3">
-              <div className="space-y-1">
-                <label className="block text-[11px] font-semibold text-slate-600">Letterhead Header Layout Style</label>
-                <select
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs focus:outline-none font-medium text-slate-700 shadow-sm"
-                  value={settings.headerStyle || 'classic'}
-                  onChange={(e: any) => setSettings(prev => ({ ...prev, headerStyle: e.target.value }))}
-                >
-                  <option value="classic">📋 Classic Professional Split (Left-Right Split)</option>
-                  <option value="minimalist">✨ Sleek Modern Minimalist (High Negative Space)</option>
-                  <option value="centered-badge">🏅 Centered Medical Badge (Symmetric Crest)</option>
-                  <option value="editorial">📰 Editorial Serif Journal (Double Border & Elegant Typography)</option>
-                  <option value="sidebar">🗂️ Accent Left Vertical Sidebar Panel (Clean Margin Line)</option>
-                  <option value="banner">🏷️ Bold Academic Top Banner (Solid Color Card Header)</option>
-                  <option value="academic">🛡️ Royal Academic Herald (Symmetric Dual-Column Shield)</option>
-                  <option value="asymmetric-bold">🎨 Asymmetric Bold Block (Dr. Profile Accent Block)</option>
-                  <option value="dual-card">📂 Dual-Column Clinical Cards (Segregated Boxed Layout)</option>
-                  <option value="inline-compact">⚡ Modern Compressed Inline (Single Line Ultra-Compact)</option>
-                  <option value="bottom-contact">📌 Bottom-Footer Contact layout (Maximizes Prescribing Area)</option>
-                </select>
-              </div>
-
-              <label className="block text-xs font-semibold text-slate-700 pt-1">Letterhead Branding & Utilities</label>
+              <label className="block text-xs font-semibold text-slate-700">Letterhead Branding & Utilities</label>
               
               <div className="grid grid-cols-2 gap-3.5">
                 <div>
